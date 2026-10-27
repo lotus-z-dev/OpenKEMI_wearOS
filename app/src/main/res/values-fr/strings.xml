@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- OpenKEMI - Ressources de Traduction en Français (Optimisées pour montre ronde) -->
+<resources>
+    <!-- Lanceur -->
+    <string name="app_name">Veste</string>
+    <string name="shortcut_open_long_label">Ouvrir la veste chauffante</string>
+
+    <!-- Zones de Chauffe (Courtes pour cadran de montre) -->
+    <string name="zone_neck">Col</string>
+    <string name="zone_back">Dos</string>
+    <string name="zone_belly">Ventre</string>
+
+    <!-- Badges Clairs ON / OFF -->
+    <string name="state_on">ON</string>
+    <string name="state_off">OFF</string>
+    <string name="vest_status_title">Veste</string>
+    <string name="vest_heating_on">CHAUFFE (ON)</string>
+    <string name="vest_heating_off">ÉTEINTE (OFF)</string>
+
+    <!-- Niveaux de Chauffe (Matériel Kemimoto : 1=Vert, 2=Bleu, 3=Rouge) -->
+    <string name="level_off">ÉTEINT</string>
+    <string name="level_low">Niveau 1 (Vert)</string>
+    <string name="level_mid">Niveau 2 (Bleu)</string>
+    <string name="level_high">Niveau 3 (Rouge)</string>
+
+    <!-- Préréglages Directs 3 Couleurs -->
+    <string name="preset_green">Vert</string>
+    <string name="preset_blue">Bleu</string>
+    <string name="preset_red">Rouge</string>
+    <string name="preset_off">Éteindre (0)</string>
+
+    <!-- Boutons de Contrôle -->
+    <string name="btn_turn_off">Éteindre (0)</string>
+    <string name="btn_turn_on">Allumer</string>
+    <string name="btn_max">Max (3)</string>
+    <string name="btn_connect">Connecter</string>
+    <string name="btn_disconnect">Déconnecter</string>
+    <string name="stop_action">Stopper</string>
+
+    <!-- Statut de Connexion -->
+    <string name="status_connected">Connecté</string>
+    <string name="status_scanning">Recherche...</string>
+    <string name="status_disconnected">Déconnecté</string>
+
+    <!-- Mode Furtif -->
+    <string name="stealth_mode">Mode Furtif</string>
+    <string name="led_off">LED ÉTEINTE</string>
+    <string name="led_on">LED ALLUMÉE</string>
+
+    <!-- En-tête des Profils -->
+    <string name="title_automated_profiles">Profils Automatisés</string>
+
+    <!-- Profil 1: 5m / 5m -->
+    <string name="profile_eco_5_5_title">Cycle 5m / 5m</string>
+    <string name="profile_eco_5_5_subtitle">5 min Fort ⇄ 5 min Bas</string>
+    <string name="profile_eco_5_5_step1">Chauffe Forte (5m)</string>
+    <string name="profile_eco_5_5_step2">Maintien Bas (5m)</string>
+
+    <!-- Profil 2: 5m / 10m -->
+    <string name="profile_eco_5_10_title">Éco 5m / 10m</string>
+    <string name="profile_eco_5_10_subtitle">5 min Fort ⇄ 10 min Bas</string>
+    <string name="profile_eco_5_10_step1">Chauffe Forte (5m)</string>
+    <string name="profile_eco_5_10_step2">Maintien Éco (10m)</string>
+
+    <!-- Profil 3: 10m / 10m -->
+    <string name="profile_extreme_10_10_title">Survie 10m / 10m</string>
+    <string name="profile_extreme_10_10_subtitle">10 min Moyen ⇄ 10 min Arrêt</string>
+    <string name="profile_extreme_10_10_step1">Chauffe Moyenne (10m)</string>
+    <string name="profile_extreme_10_10_step2">Arrêt Total (10m)</string>
+
+    <!-- Profil 4: Préchauffage Éclair -->
+    <string name="profile_boost_title">Préchauffage</string>
+    <string name="profile_boost_subtitle">3 min Boost ➔ Moyen</string>
+    <string name="profile_boost_step1">Coup de Boost (3m)</string>
+    <string name="profile_boost_step2">Croisière (2h)</string>
+
+    <!-- Profil 5: Coupe-Vent Moto -->
+    <string name="profile_moto_title">Moto / Vent</string>
+    <string name="profile_moto_subtitle">Col &amp; Dos Forts, Ventre Bas</string>
+    <string name="profile_moto_step1">Protection Vent</string>
+
+    <!-- Alertes Sécurité -->
+    <string name="alert_bluetooth_disabled">Bluetooth inactif ! Touchez pour l\'activer.</string>
+    <string name="alert_ble_scanner_unavailable">Scanner BLE indisponible.</string>
+    <string name="alert_vest_not_found">Gilet introuvable. Approchez la montre.</string>
+    <string name="alert_scan_failed">Échec du scan (%d).</string>
+    <string name="alert_proximity_scan">Trop loin (%d dBm). Approchez &lt; 1 m.</string>
+    <string name="alert_proximity_command">Bloqué : Approchez &lt; 1 m.</string>
+
+    <!-- Raccourcis & Assistant -->
+    <string name="shortcut_start_label">Allumer</string>
+    <string name="shortcut_start_long_label">Allumer la veste chauffante</string>
+    <string name="shortcut_stop_label">Éteindre</string>
+    <string name="shortcut_stop_long_label">Éteindre la veste chauffante</string>
+    <string name="shortcut_green_label">Vert (1)</string>
+    <string name="shortcut_green_long_label">Chauffage niveau 1 vert</string>
+    <string name="shortcut_blue_label">Bleu (2)</string>
+    <string name="shortcut_blue_long_label">Chauffage niveau 2 bleu</string>
+    <string name="shortcut_max_label">Max 3/3</string>
+    <string name="shortcut_max_long_label">Chauffage au maximum</string>
+    <string name="shortcut_stealth_label">Furtif</string>
+    <string name="shortcut_stealth_long_label">Activer le mode furtif</string>
+
+    <!-- Tuile & Complication Wear OS -->
+    <string name="tile_title">Veste</string>
+    <string name="complication_label">Veste</string>
+    <string name="complication_desc">Statut de la veste chauffante</string>
+</resources>

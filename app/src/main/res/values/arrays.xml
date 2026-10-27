@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- OpenKEMI - English Synonym Arrays for Google Assistant & Gemini NLU -->
+<resources>
+    <string-array name="vest_synonyms">
+        <item>jacket</item>
+        <item>heated jacket</item>
+        <item>heating jacket</item>
+        <item>vest</item>
+        <item>heated vest</item>
+        <item>heating vest</item>
+        <item>coat</item>
+        <item>heated apparel</item>
+        <item>openkemi</item>
+        <item>open kemi</item>
+        <item>open kenny</item>
+        <item>kenny</item>
+        <item>kemi</item>
+    </string-array>
+</resources>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- OpenKEMI - English Base String Resources -->
+<resources>
+    <!-- Launcher -->
+    <string name="app_name">Jacket</string>
+    <string name="shortcut_open_long_label">Open heated jacket</string>
+
+    <!-- Heating Zones -->
+    <string name="zone_neck">Neck</string>
+    <string name="zone_back">Back</string>
+    <string name="zone_belly">Belly</string>
+
+    <!-- Clear ON / OFF Badges -->
+    <string name="state_on">ON</string>
+    <string name="state_off">OFF</string>
+    <string name="vest_status_title">Vest Power</string>
+    <string name="vest_heating_on">HEATING (ON)</string>
+    <string name="vest_heating_off">OFF</string>
+
+    <!-- Zone Levels (Hardware: 1=Green, 2=Blue, 3=Red) -->
+    <string name="level_off">OFF</string>
+    <string name="level_low">Level 1 (Green)</string>
+    <string name="level_mid">Level 2 (Blue)</string>
+    <string name="level_high">Level 3 (Red)</string>
+
+    <!-- 3-Color Intensity Presets -->
+    <string name="preset_green">Green</string>
+    <string name="preset_blue">Blue</string>
+    <string name="preset_red">Red</string>
+    <string name="preset_off">Turn Off (0)</string>
+
+    <!-- Controls -->
+    <string name="btn_turn_off">Turn Off (0)</string>
+    <string name="btn_turn_on">Turn On</string>
+    <string name="btn_max">Max (3)</string>
+    <string name="btn_connect">Connect</string>
+    <string name="btn_disconnect">Disconnect</string>
+    <string name="stop_action">Stop</string>
+
+    <!-- Status -->
+    <string name="status_connected">Connected</string>
+    <string name="status_scanning">Searching...</string>
+    <string name="status_disconnected">Disconnected</string>
+
+    <!-- Stealth Mode -->
+    <string name="stealth_mode">Stealth Mode</string>
+    <string name="led_off">LED OFF</string>
+    <string name="led_on">LED ON</string>
+
+    <!-- Profile Section Header -->
+    <string name="title_automated_profiles">Automated Profiles</string>
+
+    <!-- Profile 1: 5m / 5m -->
+    <string name="profile_eco_5_5_title">5m / 5m Cycle</string>
+    <string name="profile_eco_5_5_subtitle">5 min High ⇄ 5 min Low</string>
+    <string name="profile_eco_5_5_step1">High Heat (5m)</string>
+    <string name="profile_eco_5_5_step2">Low Cruise (5m)</string>
+
+    <!-- Profile 2: 5m / 10m -->
+    <string name="profile_eco_5_10_title">5m / 10m Eco</string>
+    <string name="profile_eco_5_10_subtitle">5 min High ⇄ 10 min Low</string>
+    <string name="profile_eco_5_10_step1">High Heat (5m)</string>
+    <string name="profile_eco_5_10_step2">Eco Cruise (10m)</string>
+
+    <!-- Profile 3: 10m / 10m -->
+    <string name="profile_extreme_10_10_title">10m / 10m Extreme</string>
+    <string name="profile_extreme_10_10_subtitle">10 min Mid ⇄ 10 min Off</string>
+    <string name="profile_extreme_10_10_step1">Active Heat (10m)</string>
+    <string name="profile_extreme_10_10_step2">Total Pause (10m)</string>
+
+    <!-- Profile 4: Boost Warmup -->
+    <string name="profile_boost_title">Rapid Warmup</string>
+    <string name="profile_boost_subtitle">3 min Boost ➔ Cruise Mid</string>
+    <string name="profile_boost_step1">Boost Heat (3m)</string>
+    <string name="profile_boost_step2">Comfort Cruise (2h)</string>
+
+    <!-- Profile 5: Moto Wind -->
+    <string name="profile_moto_title">Moto / Wind</string>
+    <string name="profile_moto_subtitle">Collar &amp; Back High, Belly Low</string>
+    <string name="profile_moto_step1">Wind Shield (High)</string>
+
+    <!-- Diagnostic Alerts -->
+    <string name="alert_bluetooth_disabled">Bluetooth off! Tap to enable.</string>
+    <string name="alert_ble_scanner_unavailable">BLE Scanner unavailable.</string>
+    <string name="alert_vest_not_found">Vest not found. Bring watch closer.</string>
+    <string name="alert_scan_failed">Scan failed (%d).</string>
+    <string name="alert_proximity_scan">Too far (%d dBm). Bring watch &lt; 1 m.</string>
+    <string name="alert_proximity_command">Blocked: Bring watch &lt; 1 m.</string>
+
+    <!-- Shortcuts & Assistant -->
+    <string name="shortcut_start_label">Turn On</string>
+    <string name="shortcut_start_long_label">Turn on heated jacket</string>
+    <string name="shortcut_stop_label">Turn Off</string>
+    <string name="shortcut_stop_long_label">Turn off heated jacket</string>
+    <string name="shortcut_green_label">Green (1)</string>
+    <string name="shortcut_green_long_label">Set jacket heat to level 1 green</string>
+    <string name="shortcut_blue_label">Blue (2)</string>
+    <string name="shortcut_blue_long_label">Set jacket heat to level 2 blue</string>
+    <string name="shortcut_max_label">Max Heat</string>
+    <string name="shortcut_max_long_label">Set jacket heat to maximum</string>
+    <string name="shortcut_stealth_label">Stealth</string>
+    <string name="shortcut_stealth_long_label">Toggle stealth mode LEDs</string>
+
+    <!-- Wear OS Tile & Complication -->
+    <string name="tile_title">Jacket</string>
+    <string name="complication_label">Jacket</string>
+    <string name="complication_desc">Heated jacket status</string>
+</resources>

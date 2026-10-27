@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- OpenKEMI - Tableaux des synonymes en français pour Assistant & Gemini -->
+<resources>
+    <string-array name="vest_synonyms">
+        <item>veste</item>
+        <item>veste chauffante</item>
+        <item>gilet</item>
+        <item>gilet chauffant</item>
+        <item>manteau</item>
+        <item>manteau chauffant</item>
+        <item>blouson</item>
+        <item>blouson chauffant</item>
+        <item>openkemi</item>
+        <item>open kemi</item>
+        <item>open kenny</item>
+        <item>kenny</item>
+        <item>kemi</item>
+    </string-array>
+</resources>

@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  OpenKEMI - Google Assistant & Gemini Voice Capabilities Configuration
+  
+  Bilingual NLU bindings for "veste", "veste chauffante", "gilet", "jacket", "heated jacket", "kenny", etc.
+  Supports both Built-In Intents (BII) and Custom Actions.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- BII: Stop Device Operation (e.g., "Éteins la veste", "Turn off jacket", "Stop heating") -->
+    <capability android:name="actions.intent.STOP_DEVICE_OPERATION">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=heat&amp;zone=all&amp;level=0">
+            <parameter
+                android:name="device.name"
+                android:key="deviceName" />
+        </intent>
+    </capability>
+
+    <!-- BII: Start Device Operation (e.g., "Allume la veste", "Turn on jacket") -->
+    <capability android:name="actions.intent.START_DEVICE_OPERATION">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=heat&amp;zone=all&amp;level=2">
+            <parameter
+                android:name="device.name"
+                android:key="deviceName" />
+        </intent>
+    </capability>
+
+    <!-- Custom Capability: Stop Heating -->
+    <capability android:name="custom.actions.intent.STOP_HEATING">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=heat&amp;zone=all&amp;level=0" />
+    </capability>
+
+    <!-- Custom Capability: Set Heating Level -->
+    <capability android:name="custom.actions.intent.SET_HEATING">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=heat&amp;zone={zone}&amp;level={level}">
+            <parameter
+                android:name="zone"
+                android:key="zone" />
+            <parameter
+                android:name="level"
+                android:key="level" />
+        </intent>
+    </capability>
+
+    <!-- Static Shortcut: Stop Vest / Éteindre la veste -->
+    <shortcut
+        android:shortcutId="stop_vest"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_stop_label"
+        android:shortcutLongLabel="@string/shortcut_stop_long_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=heat&amp;zone=all&amp;level=0" />
+        <capability-binding android:key="actions.intent.STOP_DEVICE_OPERATION">
+            <parameter-binding
+                android:key="device.name"
+                android:value="@array/vest_synonyms" />
+        </capability-binding>
+        <capability-binding android:key="custom.actions.intent.STOP_HEATING" />
+        <category android:name="android.intent.category.DEFAULT" />
+    </shortcut>
+
+    <!-- Static Shortcut: Turn On Vest / Allumer la veste -->
+    <shortcut
+        android:shortcutId="start_vest"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_start_label"
+        android:shortcutLongLabel="@string/shortcut_start_long_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=heat&amp;zone=all&amp;level=2" />
+        <capability-binding android:key="actions.intent.START_DEVICE_OPERATION">
+            <parameter-binding
+                android:key="device.name"
+                android:value="@array/vest_synonyms" />
+        </capability-binding>
+        <category android:name="android.intent.category.DEFAULT" />
+    </shortcut>
+
+    <!-- Static Shortcut: Green Heat / Niveau 1 Vert -->
+    <shortcut
+        android:shortcutId="heat_green"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_green_label"
+        android:shortcutLongLabel="@string/shortcut_green_long_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=heat&amp;zone=all&amp;level=1" />
+        <capability-binding android:key="custom.actions.intent.SET_HEATING" />
+        <category android:name="android.intent.category.DEFAULT" />
+    </shortcut>
+
+    <!-- Static Shortcut: Blue Heat / Niveau 2 Bleu -->
+    <shortcut
+        android:shortcutId="heat_blue"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_blue_label"
+        android:shortcutLongLabel="@string/shortcut_blue_long_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=heat&amp;zone=all&amp;level=2" />
+        <capability-binding android:key="custom.actions.intent.SET_HEATING" />
+        <category android:name="android.intent.category.DEFAULT" />
+    </shortcut>
+
+    <!-- Static Shortcut: Max Heat / Chauffage Max -->
+    <shortcut
+        android:shortcutId="max_heating"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_max_label"
+        android:shortcutLongLabel="@string/shortcut_max_long_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=heat&amp;zone=all&amp;level=3" />
+        <capability-binding android:key="custom.actions.intent.SET_HEATING" />
+        <category android:name="android.intent.category.DEFAULT" />
+    </shortcut>
+
+    <!-- Static Shortcut: Stealth Mode / Mode Furtif -->
+    <shortcut
+        android:shortcutId="toggle_stealth"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_stealth_label"
+        android:shortcutLongLabel="@string/shortcut_stealth_long_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=stealth&amp;enabled=true" />
+        <category android:name="android.intent.category.DEFAULT" />
+    </shortcut>
+
+    <!-- BII: Open App Feature (e.g., "Ouvre la veste", "Open jacket") -->
+    <capability android:name="actions.intent.OPEN_APP_FEATURE">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=open">
+            <parameter
+                android:name="feature"
+                android:key="feature" />
+        </intent>
+    </capability>
+
+    <!-- Static Shortcut: Open Vest / Ouvrir la veste -->
+    <shortcut
+        android:shortcutId="open_vest"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/app_name"
+        android:shortcutLongLabel="@string/shortcut_open_long_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.supplices.kemimotowear"
+            android:targetClass="com.supplices.kemimotowear.ui.MainActivity"
+            android:data="kemimoto://action?command=open" />
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding
+                android:key="feature"
+                android:value="@array/vest_synonyms" />
+        </capability-binding>
+        <category android:name="android.intent.category.DEFAULT" />
+    </shortcut>
+
+</shortcuts>
