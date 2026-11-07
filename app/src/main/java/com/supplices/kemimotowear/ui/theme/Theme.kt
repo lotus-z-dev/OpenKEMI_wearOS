@@ -2,8 +2,15 @@ package com.supplices.kemimotowear.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Colors
 import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.compose.material.Typography
+import com.supplices.kemimotowear.R
 
 /**
  * OpenKEMI Color Palette and Wear OS Material Theme.
@@ -19,6 +26,66 @@ val HeatMidBlue = Color(0xFF00B0FF)      // Level 2: Blue (Moyen)
 val HeatHighRed = Color(0xFFFF1744)      // Level 3: Red (Élevé)
 val HeatBatteryGreen = Color(0xFF00E676) // Healthy battery state
 val ProximityWarningColor = Color(0xFFFF9100) // Proximity or Bluetooth alert banner
+
+// Famille de police native Ubuntu (sans librairie externe)
+val UbuntuFontFamily = FontFamily(
+    Font(R.font.ubuntu_regular, FontWeight.Normal),
+    Font(R.font.ubuntu_medium, FontWeight.Medium),
+    Font(R.font.ubuntu_bold, FontWeight.Bold)
+)
+
+// Typographie Wear OS optimisée pour petits caractères avec interlignes resserrés
+val UbuntuTypography = Typography(
+    defaultFontFamily = UbuntuFontFamily,
+    title1 = TextStyle(
+        fontFamily = UbuntuFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 15.sp,
+        lineHeight = 16.sp
+    ),
+    title2 = TextStyle(
+        fontFamily = UbuntuFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 13.sp,
+        lineHeight = 14.sp
+    ),
+    title3 = TextStyle(
+        fontFamily = UbuntuFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 11.5.sp,
+        lineHeight = 12.5.sp
+    ),
+    body1 = TextStyle(
+        fontFamily = UbuntuFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 10.5.sp,
+        lineHeight = 11.5.sp
+    ),
+    body2 = TextStyle(
+        fontFamily = UbuntuFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 9.5.sp,
+        lineHeight = 10.5.sp
+    ),
+    caption1 = TextStyle(
+        fontFamily = UbuntuFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 8.5.sp,
+        lineHeight = 9.5.sp
+    ),
+    caption2 = TextStyle(
+        fontFamily = UbuntuFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 8.sp,
+        lineHeight = 9.sp
+    ),
+    button = TextStyle(
+        fontFamily = UbuntuFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 10.sp,
+        lineHeight = 11.sp
+    )
+)
 
 val WearColors = Colors(
     primary = Color(0xFFFF5252),
@@ -37,6 +104,7 @@ val WearColors = Colors(
 fun KemimotoWearTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colors = WearColors,
+        typography = UbuntuTypography,
         content = content
     )
 }

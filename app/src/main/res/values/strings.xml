@@ -105,4 +105,89 @@
     <string name="tile_title">Jacket</string>
     <string name="complication_label">Jacket</string>
     <string name="complication_desc">Heated jacket status</string>
+
+    <!-- Operating Mode & Gateway Extension -->
+    <string name="mode_selector_title">Mode</string>
+    <string name="mode_direct">Direct (Vest)</string>
+    <string name="mode_gateway">📡 ESP32 Gateway</string>
+    <string name="btn_reset_battery">🔄 Reset Battery</string>
+    <string name="battery_reset_success">Battery reset to 100%</string>
+    <string name="battery_runtime_format">%d min remaining</string>
+    <string name="chopped_low_title">⚡ Chopped Low (5/5)</string>
+    <string name="chopped_low_desc">5m Low ⇄ 5m Off</string>
+    <string name="battery_critical_alert">Critical Battery (&lt;= 4%)! Shutting down.</string>
+    <string name="alert_proximity_command_gateway">Blocked: Gateway &gt; 1.5 m away.</string>
+
+    <!-- MAC & Pairing Management -->
+    <string name="title_settings">Settings</string>
+    <string name="mac_paired_format">MAC: %s</string>
+    <string name="mac_unpaired">No jacket paired</string>
+    <string name="mac_saved_badge">Saved</string>
+    <string name="btn_forget_mac">🗑️ Forget this jacket</string>
+    <string name="btn_pair_new">Pair jacket (&lt; 1 m)</string>
+    <string name="radar_scanning_text">Searching nearby (&lt; 1 m)...</string>
+    <string name="radar_proximity_hint">Hold watch right next to the jacket</string>
+
+    <!-- Battery KeepAlive -->
+    <string name="keepalive_title">🔋 Battery KeepAlive</string>
+    <string name="keepalive_desc_on">Active: micro-pulses every 22s</string>
+    <string name="keepalive_desc_off">Disabled: battery sleep possible</string>
+
+    <!-- 90-Minute Safety -->
+    <string name="safety_90m_title">🛡️ 90-Min Safety</string>
+    <string name="safety_90m_desc_on">Active: auto shut-off &amp; loud alarm beep</string>
+    <string name="safety_90m_desc_off">Disabled: unlimited continuous heat</string>
+    <string name="safety_90m_triggered">90-MIN ALERT: Heat shut down!</string>
+
+    <!-- Multi-panel Navigation -->
+    <string name="status_unpaired_pill">No jacket paired</string>
+    <string name="btn_goto_pairing">Pair jacket</string>
+    <string name="btn_goto_settings">Settings</string>
+    <string name="btn_goto_functions">Zones</string>
+    <string name="swipe_to_settings_hint">← Swipe to Settings</string>
+    <string name="swipe_to_functions_hint">Functions &amp; Profiles →</string>
+    <string name="nav_to_home">Home →</string>
+    <string name="nav_back_home">← Home</string>
+    <string name="paired_ready_status">Connected • Ready</string>
+
+    <!-- Section Info Passerelle ESP32 Proxy -->
+    <string name="esp32_info_title">ESP32 Gateway</string>
+    <string name="esp32_info_subtitle">🚀 Why use an ESP32?</string>
+    <string name="esp32_info_desc">• 2x Battery life: Chopped Low eco mode (5m/5m)\n• Zero sleep battery KeepAlive inside pocket\n• Hardware BLE firewall &amp; secure link\n• Recommended: Waveshare ESP32 modules on Amazon</string>
+    <string name="esp32_info_github_label">Proxy Firmware on GitHub:</string>
+    <string name="esp32_info_github_url">openkemi_wearos_esp32proxy</string>
+    <string name="esp32_info_close">Close</string>
+
+    <!-- Sub-option & Advanced ESP32 Gateway Settings -->
+    <string name="esp32_suboption_title">📡 ESP32 Gateway</string>
+    <string name="esp32_suboption_desc">Smart BLE relay &amp; battery savings</string>
+    <string name="esp32_warning_banner">⚠️ Warning: A dedicated ESP32 module powered on nearby is required. Watch commands are relayed through the ESP32 to the jacket.</string>
+    <string name="esp32_toggle_label">ESP32 Gateway Mode</string>
+    <string name="esp32_toggle_desc_on">Gateway active (ESP32 relay)</string>
+    <string name="esp32_toggle_desc_off">Disabled (direct watch-to-jacket)</string>
+    <string name="esp32_btn_forget_jacket">🗑️ Forget jacket (ESP32)</string>
+    <string name="esp32_btn_forget_gateway">🗑️ Forget gateway (Watch)</string>
+    <string name="esp32_btn_connect">🔌 Connect Gateway</string>
+    <string name="esp32_btn_disconnect">🔌 Disconnect Gateway</string>
+    <string name="esp32_status_connected">Gateway connected</string>
+    <string name="esp32_status_disconnected">Gateway disconnected</string>
+    <string name="esp32_status_scanning">Searching ESP32...</string>
+    <string name="esp32_toast_jacket_cleared">Forget command sent to ESP32</string>
+    <string name="esp32_toast_gateway_cleared">Gateway forgotten on watch</string>
+
+    <!-- About Section & Legal Mentions -->
+    <string name="about_title">About</string>
+    <string name="about_app_name">OpenKEMI Wear OS</string>
+    <string name="about_version">v1.1.0 • Galaxy Watch 7</string>
+    <string name="about_unofficial_notice">⚠️ Unofficial 3rd-party client</string>
+    <string name="about_legal_trademark">Kemimoto® is a trademark of its respective owners. OpenKEMI is an independent community project, unaffiliated.</string>
+    <string name="about_legal_font">Ubuntu Font © Canonical Ltd. (UFL 1.0)</string>
+    <string name="about_legal_libs">AndroidX &amp; Compose © Google (Apache 2.0)</string>
+    <string name="about_github_label">Source code:</string>
+    <string name="about_github_url">lotus-z-dev/OpenKEMI_wearOS</string>
+
+    <!-- Affiliate Purchase Links -->
+    <string name="btn_buy_vest_amazon">🛒 Buy Kemimoto Vest (Amazon)</string>
+    <string name="buy_vest_hint">No vest yet? Get it on Amazon</string>
+    <string name="buy_vest_url">https://link.amazon/B005JxEoX</string>
 </resources>

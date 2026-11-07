@@ -6,9 +6,9 @@
     <string name="shortcut_open_long_label">Ouvrir la veste chauffante</string>
 
     <!-- Zones de Chauffe (Courtes pour cadran de montre) -->
-    <string name="zone_neck">Col</string>
-    <string name="zone_back">Dos</string>
-    <string name="zone_belly">Ventre</string>
+    <string name="zone_neck">🧣 Col</string>
+    <string name="zone_back">🦺 Dos</string>
+    <string name="zone_belly">♨️ Ventre</string>
 
     <!-- Badges Clairs ON / OFF -->
     <string name="state_on">ON</string>
@@ -43,7 +43,7 @@
     <string name="status_disconnected">Déconnecté</string>
 
     <!-- Mode Furtif -->
-    <string name="stealth_mode">Mode Furtif</string>
+    <string name="stealth_mode">🕶️ Mode Furtif</string>
     <string name="led_off">LED ÉTEINTE</string>
     <string name="led_on">LED ALLUMÉE</string>
 
@@ -51,31 +51,31 @@
     <string name="title_automated_profiles">Profils Automatisés</string>
 
     <!-- Profil 1: 5m / 5m -->
-    <string name="profile_eco_5_5_title">Cycle 5m / 5m</string>
+    <string name="profile_eco_5_5_title">🌿 Cycle 5m / 5m</string>
     <string name="profile_eco_5_5_subtitle">5 min Fort ⇄ 5 min Bas</string>
     <string name="profile_eco_5_5_step1">Chauffe Forte (5m)</string>
     <string name="profile_eco_5_5_step2">Maintien Bas (5m)</string>
 
     <!-- Profil 2: 5m / 10m -->
-    <string name="profile_eco_5_10_title">Éco 5m / 10m</string>
+    <string name="profile_eco_5_10_title">🌱 Éco 5m / 10m</string>
     <string name="profile_eco_5_10_subtitle">5 min Fort ⇄ 10 min Bas</string>
     <string name="profile_eco_5_10_step1">Chauffe Forte (5m)</string>
     <string name="profile_eco_5_10_step2">Maintien Éco (10m)</string>
 
     <!-- Profil 3: 10m / 10m -->
-    <string name="profile_extreme_10_10_title">Survie 10m / 10m</string>
+    <string name="profile_extreme_10_10_title">❄️ Survie 10m / 10m</string>
     <string name="profile_extreme_10_10_subtitle">10 min Moyen ⇄ 10 min Arrêt</string>
     <string name="profile_extreme_10_10_step1">Chauffe Moyenne (10m)</string>
     <string name="profile_extreme_10_10_step2">Arrêt Total (10m)</string>
 
     <!-- Profil 4: Préchauffage Éclair -->
-    <string name="profile_boost_title">Préchauffage</string>
+    <string name="profile_boost_title">🚀 Préchauffage Express</string>
     <string name="profile_boost_subtitle">3 min Boost ➔ Moyen</string>
     <string name="profile_boost_step1">Coup de Boost (3m)</string>
     <string name="profile_boost_step2">Croisière (2h)</string>
 
     <!-- Profil 5: Coupe-Vent Moto -->
-    <string name="profile_moto_title">Moto / Vent</string>
+    <string name="profile_moto_title">🏍️ Moto / Vent</string>
     <string name="profile_moto_subtitle">Col &amp; Dos Forts, Ventre Bas</string>
     <string name="profile_moto_step1">Protection Vent</string>
 
@@ -105,4 +105,90 @@
     <string name="tile_title">Veste</string>
     <string name="complication_label">Veste</string>
     <string name="complication_desc">Statut de la veste chauffante</string>
+
+    <!-- Mode d'opération & Passerelle ESP32 -->
+    <string name="mode_selector_title">Mode</string>
+    <string name="mode_direct">Direct (Veste)</string>
+    <string name="mode_gateway">📡 Passerelle ESP32</string>
+    <string name="btn_reset_battery">🔄 Réinit. Batterie</string>
+    <string name="battery_reset_success">Batterie réinitialisée à 100%</string>
+    <string name="battery_runtime_format">%d min restantes</string>
+    <string name="chopped_low_title">⚡ Chopped Low (5/5)</string>
+    <string name="chopped_low_desc">5m Bas ⇄ 5m Arrêt</string>
+    <string name="battery_critical_alert">Batterie critique (&lt;= 4%) ! Extinction.</string>
+    <string name="alert_proximity_command_gateway">Bloqué : Passerelle à plus de 1,5 m.</string>
+
+    <!-- Gestion MAC & Appairage -->
+    <string name="title_settings">Paramètres</string>
+    <string name="mac_paired_format">MAC : %s</string>
+    <string name="mac_unpaired">Aucune veste associée</string>
+    <string name="mac_saved_badge">Enregistrée</string>
+    <string name="btn_forget_mac">🗑️ Oublier cette veste</string>
+    <string name="btn_pair_new">Appairer une veste (&lt; 1 m)</string>
+    <string name="radar_scanning_text">Recherche à proximité (&lt; 1 m)...</string>
+    <string name="radar_proximity_hint">Approchez la montre tout près de la veste</string>
+
+    <!-- Maintien Batterie KeepAlive -->
+    <string name="keepalive_title">🔋 Maintien Batterie</string>
+    <string name="keepalive_desc_on">Actif : micro-impulsions 22s</string>
+    <string name="keepalive_desc_off">Désactivé : veille autorisée</string>
+
+    <!-- Sécurité 90 Minutes -->
+    <string name="safety_90m_title">🛡️ Sécurité 90 min</string>
+    <string name="safety_90m_desc_on">Actif : alarme sonore &amp; arrêt</string>
+    <string name="safety_90m_desc_off">Désactivé : chauffe continue</string>
+    <string name="safety_90m_triggered">ALERTE 90 min : Chaleur coupée !</string>
+
+    <!-- Navigation & Guides Multi-panneaux -->
+    <string name="status_unpaired_pill">Veste non appairée</string>
+    <string name="btn_goto_pairing">Appairer la veste</string>
+    <string name="btn_goto_settings">Réglages</string>
+    <string name="btn_goto_functions">Profils</string>
+    <string name="swipe_to_settings_hint">← Glisser vers Réglages</string>
+    <string name="swipe_to_functions_hint">Fonctions &amp; Profils →</string>
+    <string name="nav_to_home">Accueil →</string>
+    <string name="nav_back_home">← Accueil</string>
+    <string name="paired_ready_status">Veste connectée</string>
+
+    <!-- Section Info Passerelle ESP32 Proxy -->
+    <string name="esp32_info_title">Passerelle ESP32</string>
+    <string name="esp32_info_subtitle">🚀 Pourquoi l\'ESP32 ?</string>
+    <string name="esp32_info_desc">• Autonomie doublée : mode haché Chopped Low (5m/5m)\n• Maintien batterie infaillible dans la poche\n• Pare-feu BLE matériel &amp; liaison sécurisée\n• Recommandé : modules Waveshare ESP32 sur Amazon</string>
+    <string name="esp32_info_github_label">Firmware Proxy sur GitHub :</string>
+    <string name="esp32_info_github_url">openkemi_wearos_esp32proxy</string>
+    <string name="esp32_info_close">Fermer</string>
+
+    <!-- Sous-option et gestion avancée ESP32 -->
+    <string name="esp32_suboption_title">📡 Passerelle ESP32</string>
+    <string name="esp32_suboption_desc">Relais BLE intelligent &amp; autonomie</string>
+    <string name="esp32_warning_banner">⚠️ Avertissement : Un module ESP32 dédié allumé et à proximité est requis. Les commandes de la montre sont relayées à la veste par l\'ESP32.</string>
+    <string name="esp32_toggle_label">Mode Passerelle ESP32</string>
+    <string name="esp32_toggle_desc_on">Passerelle active (relais ESP32)</string>
+    <string name="esp32_toggle_desc_off">Désactivé (mode direct montre-veste)</string>
+    <string name="esp32_btn_forget_jacket">🗑️ Oublier la veste (ESP32)</string>
+    <string name="esp32_btn_forget_gateway">🗑️ Oublier la passerelle (Montre)</string>
+    <string name="esp32_btn_connect">🔌 Connecter la passerelle</string>
+    <string name="esp32_btn_disconnect">🔌 Déconnecter la passerelle</string>
+    <string name="esp32_status_connected">Passerelle connectée</string>
+    <string name="esp32_status_disconnected">Passerelle déconnectée</string>
+    <string name="esp32_status_scanning">Recherche ESP32...</string>
+    <string name="esp32_toast_jacket_cleared">Commande d\'oubli envoyée à l\'ESP32</string>
+    <string name="esp32_toast_gateway_cleared">Passerelle oubliée sur la montre</string>
+
+    <!-- Section À Propos & Mentions Légales -->
+    <string name="about_title">À propos</string>
+    <string name="about_app_name">OpenKEMI Wear OS</string>
+    <string name="about_version">v1.1.0 • Galaxy Watch 7</string>
+    <string name="about_unofficial_notice">⚠️ Client tiers non officiel</string>
+    <string name="about_legal_trademark">Kemimoto® est une marque déposée de ses propriétaires. OpenKEMI est un projet communautaire tiers non affilié.</string>
+    <string name="about_legal_font">Police Ubuntu © Canonical Ltd. (UFL 1.0)</string>
+    <string name="about_legal_libs">AndroidX &amp; Compose © Google (Apache 2.0)</string>
+    <string name="about_desc">Contrôleur autonome pour vêtements chauffants</string>
+    <string name="about_github_label">Code source :</string>
+    <string name="about_github_url">lotus-z-dev/OpenKEMI_wearOS</string>
+
+    <!-- Liens d'achat affiliés -->
+    <string name="btn_buy_vest_amazon">🛒 Acheter la veste Kemimoto (Amazon)</string>
+    <string name="buy_vest_hint">Pas encore de veste ? Voir sur Amazon</string>
+    <string name="buy_vest_url">https://link.amazon/B005JxEoX</string>
 </resources>

@@ -4,7 +4,15 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Wear%20OS%205%2B%20%7C%20Galaxy%20Watch%207-orange.svg)](https://developer.android.com/wear)
 
-An open-source, security-hardened **Wear OS** application designed to control **Kemimoto Bluetooth Low Energy (BLE) Heated Apparel** directly from your smartwatch (optimized for Samsung Galaxy Watch 7 / Wear OS 5+).
+An open-source, security-hardened **Wear OS** application designed to control [Kemimoto](https://link.amazon/A061Fmvk2) Bluetooth Low Energy (BLE) heated apparel directly from your smartwatch (optimized for Samsung Galaxy Watch 7 / Wear OS 5+).
+
+<p align="center">
+  <a href="https://link.amazon/B005JxEoX">
+    <img src="https://m.media-amazon.com/images/I/71wLpWn0jYL._AC_SL1500_.jpg" alt="Kemimoto BLE Heated Vest" width="320" />
+  </a>
+  <br />
+  <em>👉 <a href="https://link.amazon/B005JxEoX">Get the compatible Kemimoto Heated Vest on Amazon</a></em>
+</p>
 
 ---
 
@@ -48,6 +56,14 @@ Unlike the proprietary vendor application, OpenKEMI is built with an uncompromis
   - Deep links: `kemimoto://action?command=heat&zone=all&level=X`.
 - **Wear OS Tile (`VestTileService`):** Swipe directly from the watch face to view active status and toggle heat.
 - **Watch Face Complication (`VestComplicationService`):** Display heating state right on your favorite watch face.
+
+---
+
+## 🛒 Compatible Apparel
+
+This application is designed specifically for official [Kemimoto heated apparel](https://link.amazon/A061Fmvk2). You can explore and purchase the officially supported garment directly on Amazon:
+
+👉 **[Kemimoto Heated Vest on Amazon](https://link.amazon/B005JxEoX)**
 
 ---
 

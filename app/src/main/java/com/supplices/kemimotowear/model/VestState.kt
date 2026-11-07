@@ -4,32 +4,46 @@ import com.supplices.kemimotowear.R
 
 /**
  * Immutable domain state representing the real-time configuration, telemetry,
- * and security perimeter status of the Kemimoto heated apparel.
+ * virtual fuel gauge metrics, and security perimeter status of the Kemimoto heated apparel.
  *
  * Supports bilingual localization (French/English) via string resource IDs.
  *
+ * @property mode Active operating mode: DIRECT (Wear OS <-> Jacket) or ESP32_GATEWAY
  * @property connectionStatus Current BLE GATT connection lifecycle state
  * @property neckLevel Heating level for neck / collar zone (0=Off, 1=Low, 2=Med, 3=High)
  * @property backLevel Heating level for upper back / shoulder blade zone (0..3)
  * @property bellyLevel Heating level for lower abdominal zone (0..3)
  * @property isStealthMode Hardware LED stealth mode (true = physical garment button light disabled)
- * @property batteryPercent Peripheral battery charge percentage (0-100%) decoded from telemetry
+ * @property batteryPercent Peripheral battery charge percentage (0-100%) decoded from raw telemetry
+ * @property virtualBatteryPercent Software fuel gauge SoC percentage calculated by ESP32-C6
+ * @property remainingRuntimeMinutes Estimated remaining battery runtime in minutes under active load
+ * @property accumulatedMah Total energy consumed from the battery pack in milliampere-hours
+ * @property isChoppedLowActive True if the 5 min ON / 5 min OFF duty cycle mode is actively running
+ * @property userCadenceState User movement state transmitted to the gateway (0=Stationary, 1=Walking, 2=Running, 3=Vehicle)
+ * @property isCriticalCutoff True if battery is <= 4%, triggering an emergency shutdown
  * @property timerRemainingSeconds Remaining auto-power-off countdown timer reported by hardware
  * @property activeProfile Currently running automated duty-cycle profile, or null if manual
  * @property currentStepLabelRes String resource ID describing the active profile phase
  * @property stepRemainingSeconds Countdown seconds until the next profile phase transition
  * @property currentRssi Measured Received Signal Strength Indication in dBm
- * @property isWithinProximity Physical security gate: true when watch is within calibrated ~45 cm
+ * @property isWithinProximity Physical security gate: true when watch is within calibrated perimeter (< 1m direct / < 2m gateway)
  * @property securityRejectionResId String resource ID for user diagnostic warnings
  * @property securityRejectionArg Optional format argument (e.g. RSSI dBm value or error code)
  */
 data class VestState(
+    val mode: VestMode = VestMode.DIRECT,
     val connectionStatus: ConnectionStatus = ConnectionStatus.DISCONNECTED,
     val neckLevel: Int = 0,
     val backLevel: Int = 0,
     val bellyLevel: Int = 0,
     val isStealthMode: Boolean = false,
     val batteryPercent: Int? = null,
+    val virtualBatteryPercent: Int? = null,
+    val remainingRuntimeMinutes: Int? = null,
+    val accumulatedMah: Int? = null,
+    val isChoppedLowActive: Boolean = false,
+    val userCadenceState: Int = 0x00,
+    val isCriticalCutoff: Boolean = false,
     val timerRemainingSeconds: Int = 0,
     val activeProfile: HeatingProfile? = null,
     val currentStepLabelRes: Int? = null,
@@ -37,16 +51,30 @@ data class VestState(
     val currentRssi: Int? = null,
     val isWithinProximity: Boolean = false,
     val securityRejectionResId: Int? = null,
-    val securityRejectionArg: Int? = null
+    val securityRejectionArg: Int? = null,
+    val pairedMacAddress: String? = null,
+    val isKeepAliveEnabled: Boolean = false,
+    val continuousHeatingSeconds: Long = 0L,
+    val isSafetyShutdownTriggered: Boolean = false,
+    val isSafety90mEnabled: Boolean = true,
+    val isPairingScanning: Boolean = false
 ) {
     /** True if at least one heating zone is actively drawing battery power */
     val isAnyZoneHeating: Boolean
         get() = neckLevel > 0 || backLevel > 0 || bellyLevel > 0
 
-    /** Formats power state as 0..4 hardware bars (e.g. 4/4) or percentage if available */
+    /** Returns effective battery charge percentage based on active mode */
+    val displayBatteryPercent: Int?
+        get() = if (mode == VestMode.ESP32_GATEWAY && virtualBatteryPercent != null) {
+            virtualBatteryPercent
+        } else {
+            batteryPercent
+        }
+
+    /** Formats power state as 0..4 hardware bars or percentage if available */
     val batteryDisplay: String?
-        get() = batteryPercent?.let {
-            if (it in 0..4) "$it/4" else "$it%"
+        get() = displayBatteryPercent?.let {
+            if (it in 0..4 && mode == VestMode.DIRECT) "$it/4" else "$it%"
         }
 }
 

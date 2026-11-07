@@ -74,4 +74,7 @@ dependencies {
     // Watchface Complications & Concurrency
     implementation(libs.wear.watchface.complications)
     implementation(libs.guava)
+
+    // Security & Encrypted SharedPreferences (for BLE IRK storage)
+    implementation(libs.androidx.security.crypto)
 }
