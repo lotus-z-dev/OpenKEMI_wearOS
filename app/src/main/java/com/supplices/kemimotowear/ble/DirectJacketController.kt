@@ -58,6 +58,8 @@ class DirectJacketController(private val context: Context) : JacketController {
     override val vestState: StateFlow<VestState> = _vestState.asStateFlow()
 
     private var isPairingMode = false
+    private var candidateAddress: String? = null
+    @Volatile private var pendingCommand = false
 
     private val rssiPoller = object : Runnable {
         override fun run() {
@@ -69,6 +71,7 @@ class DirectJacketController(private val context: Context) : JacketController {
     }
 
     override fun startPairingScan() {
+        if (_vestState.value.connectionStatus == ConnectionStatus.SCANNING || _vestState.value.connectionStatus == ConnectionStatus.CONNECTING) return
         isPairingMode = true
         _vestState.value = _vestState.value.copy(
             isPairingScanning = true,
@@ -80,6 +83,7 @@ class DirectJacketController(private val context: Context) : JacketController {
     }
 
     override fun startScanAndConnect() {
+        if (_vestState.value.connectionStatus == ConnectionStatus.SCANNING || _vestState.value.connectionStatus == ConnectionStatus.CONNECTING) return
         isPairingMode = false
         _vestState.value = _vestState.value.copy(
             isPairingScanning = false,
@@ -186,12 +190,7 @@ class DirectJacketController(private val context: Context) : JacketController {
                     val isNearby = rssi >= PROXIMITY_RSSI_THRESHOLD_1M_FREE_SPACE
                     if (isNearby) {
                         stopScan()
-                        prefs.edit().putString(KEY_SAVED_MAC, device.address).apply()
-                        _vestState.value = _vestState.value.copy(
-                            pairedMacAddress = device.address,
-                            isPairingScanning = false,
-                            securityRejectionResId = null
-                        )
+                        candidateAddress = device.address
                         connectToDevice(device)
                     } else {
                         _vestState.value = _vestState.value.copy(
@@ -210,12 +209,7 @@ class DirectJacketController(private val context: Context) : JacketController {
                         // First-time fallback
                         if (rssi >= PROXIMITY_RSSI_THRESHOLD_1M_FREE_SPACE) {
                             stopScan()
-                            prefs.edit().putString(KEY_SAVED_MAC, device.address).apply()
-                            _vestState.value = _vestState.value.copy(
-                                pairedMacAddress = device.address,
-                                isPairingScanning = false,
-                                securityRejectionResId = null
-                            )
+                            candidateAddress = device.address
                             connectToDevice(device)
                         }
                     }
@@ -235,49 +229,78 @@ class DirectJacketController(private val context: Context) : JacketController {
 
     private fun connectToDevice(device: BluetoothDevice) {
         _vestState.value = _vestState.value.copy(connectionStatus = ConnectionStatus.CONNECTING)
-        bluetoothGatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+        try {
+            bluetoothGatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+        } catch (_: Exception) {
+            failConnection(R.string.alert_connection_failed)
+        }
+    }
+
+    private fun failConnection(message: Int) {
+        disconnectAndClean()
+        _vestState.value = _vestState.value.copy(securityRejectionResId = message, securityRejectionArg = null)
     }
 
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                _vestState.value = _vestState.value.copy(
-                    connectionStatus = ConnectionStatus.CONNECTED,
-                    securityRejectionResId = null,
-                    securityRejectionArg = null
-                )
-                gatt?.discoverServices()
-                mainHandler.post(rssiPoller)
+            if (gatt !== bluetoothGatt) return
+            if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
+                if (gatt?.discoverServices() != true) failConnection(R.string.alert_connection_failed)
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 disconnectAndClean()
+            } else {
+                failConnection(R.string.alert_connection_failed)
             }
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
+            if (gatt !== bluetoothGatt) return
             if (status == BluetoothGatt.GATT_SUCCESS && gatt != null) {
-                val service = gatt.getService(KemimotoProtocol.SERVICE_UUID) ?: return
+                val service = gatt.getService(KemimotoProtocol.SERVICE_UUID)
+                    ?: return failConnection(R.string.alert_service_missing)
 
                 writeCharacteristic = service.getCharacteristic(KemimotoProtocol.CHAR_WRITE_UUID)
                 notifyCharacteristic = service.getCharacteristic(KemimotoProtocol.CHAR_NOTIFY_UUID)
+                if (writeCharacteristic == null || notifyCharacteristic == null) {
+                    failConnection(R.string.alert_service_missing)
+                    return
+                }
 
                 notifyCharacteristic?.let { char ->
-                    gatt.setCharacteristicNotification(char, true)
+                    if (!gatt.setCharacteristicNotification(char, true)) {
+                        failConnection(R.string.alert_connection_failed)
+                        return
+                    }
                     val descriptor = char.getDescriptor(CCCD_UUID)
                     if (descriptor != null) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+                            if (gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) != BluetoothStatusCodes.SUCCESS) failConnection(R.string.alert_connection_failed)
                         } else {
                             @Suppress("DEPRECATION")
                             descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                             @Suppress("DEPRECATION")
-                            gatt.writeDescriptor(descriptor)
+                            if (!gatt.writeDescriptor(descriptor)) failConnection(R.string.alert_connection_failed)
                         }
+                    } else {
+                        failConnection(R.string.alert_service_missing)
                     }
                 }
-
-                gatt.readRemoteRssi()
-                sendCurrentLevels()
+            } else {
+                failConnection(R.string.alert_connection_failed)
             }
+        }
+
+        override fun onDescriptorWrite(gatt: BluetoothGatt?, descriptor: BluetoothGattDescriptor?, status: Int) {
+            if (gatt !== bluetoothGatt) return
+            if (status != BluetoothGatt.GATT_SUCCESS) return failConnection(R.string.alert_connection_failed)
+            candidateAddress?.let { address ->
+                prefs.edit().putString(KEY_SAVED_MAC, address).apply()
+                candidateAddress = null
+                _vestState.value = _vestState.value.copy(pairedMacAddress = address)
+            }
+            _vestState.value = _vestState.value.copy(connectionStatus = ConnectionStatus.CONNECTED, securityRejectionResId = null, securityRejectionArg = null)
+            if (gatt?.readRemoteRssi() != true) failConnection(R.string.alert_connection_failed)
+            else mainHandler.postDelayed(rssiPoller, 1500L)
         }
 
         override fun onReadRemoteRssi(gatt: BluetoothGatt?, rssi: Int, status: Int) {
@@ -289,6 +312,7 @@ class DirectJacketController(private val context: Context) : JacketController {
                     securityRejectionResId = if (!withinProximity) R.string.alert_proximity_command else null,
                     securityRejectionArg = if (!withinProximity) rssi else null
                 )
+                if (withinProximity && pendingCommand) sendCurrentLevels()
             }
         }
 
@@ -314,9 +338,18 @@ class DirectJacketController(private val context: Context) : JacketController {
 
     private fun handleIncomingTelemetry(payload: ByteArray) {
         val telemetry = KemimotoProtocol.parseTelemetry(payload) ?: return
-        _vestState.value = _vestState.value.copy(
+        val previous = _vestState.value
+        val levels = telemetry.heatingLevels
+        val hardwareOff = levels != null && previous.isAnyZoneHeating &&
+            levels.first == 0 && levels.second == 0 && levels.third == 0
+        if (hardwareOff) pendingCommand = false
+        _vestState.value = previous.copy(
             batteryPercent = telemetry.batteryPercent,
-            timerRemainingSeconds = telemetry.timerRemainingSeconds
+            timerRemainingSeconds = telemetry.timerRemainingSeconds,
+            neckLevel = levels?.first ?: previous.neckLevel,
+            backLevel = levels?.second ?: previous.backLevel,
+            bellyLevel = levels?.third ?: previous.bellyLevel,
+            isHardwareOff = previous.isHardwareOff || hardwareOff
         )
     }
 
@@ -379,9 +412,11 @@ class DirectJacketController(private val context: Context) : JacketController {
         _vestState.value = _vestState.value.copy(
             neckLevel = clampedNeck,
             backLevel = clampedBack,
-            bellyLevel = clampedBelly
+            bellyLevel = clampedBelly,
+            isHardwareOff = false
         )
         checkThermalProtection(clampedNeck, clampedBack, clampedBelly)
+        pendingCommand = true
         sendCurrentLevels()
     }
 
@@ -394,19 +429,22 @@ class DirectJacketController(private val context: Context) : JacketController {
             "ventre", "belly", "bottom" -> current.copy(bellyLevel = clamped)
             else -> current.copy(neckLevel = clamped, backLevel = clamped, bellyLevel = clamped)
         }
-        _vestState.value = newState
+        _vestState.value = newState.copy(isHardwareOff = false)
         checkThermalProtection(newState.neckLevel, newState.backLevel, newState.bellyLevel)
+        pendingCommand = true
         sendCurrentLevels()
     }
 
     override fun toggleStealthMode() {
         val newStealth = !_vestState.value.isStealthMode
         _vestState.value = _vestState.value.copy(isStealthMode = newStealth)
+        pendingCommand = true
         sendCurrentLevels()
     }
 
     override fun setStealthMode(enabled: Boolean) {
         _vestState.value = _vestState.value.copy(isStealthMode = enabled)
+        pendingCommand = true
         sendCurrentLevels()
     }
 
@@ -423,12 +461,22 @@ class DirectJacketController(private val context: Context) : JacketController {
         _vestState.value = _vestState.value.copy(userCadenceState = state)
     }
 
+    override fun keepAliveWithoutHeating() {
+        if (_vestState.value.connectionStatus == ConnectionStatus.CONNECTED &&
+            !_vestState.value.isAnyZoneHeating) sendCurrentLevels()
+    }
+
     private fun sendCurrentLevels() {
         val gatt = bluetoothGatt ?: return
         val char = writeCharacteristic ?: return
         val state = _vestState.value
 
-        // In Direct Mode, commands are sent freely without RSSI distance restriction
+        // Require a measured RSSI before sending a heating command.
+        if (state.connectionStatus != ConnectionStatus.CONNECTED ||
+            state.currentRssi == null || !state.isWithinProximity) {
+            _vestState.value = state.copy(securityRejectionResId = R.string.alert_proximity_command)
+            return
+        }
         val packet = KemimotoProtocol.buildCommandPacket(
             neck = state.neckLevel,
             back = state.backLevel,
@@ -436,8 +484,8 @@ class DirectJacketController(private val context: Context) : JacketController {
             isStealthMode = state.isStealthMode
         )
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.writeCharacteristic(char, packet, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
+        val accepted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            gatt.writeCharacteristic(char, packet, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) == BluetoothStatusCodes.SUCCESS
         } else {
             @Suppress("DEPRECATION")
             char.value = packet
@@ -446,9 +494,14 @@ class DirectJacketController(private val context: Context) : JacketController {
             @Suppress("DEPRECATION")
             gatt.writeCharacteristic(char)
         }
+        if (accepted) pendingCommand = false
+        else _vestState.value = _vestState.value.copy(securityRejectionResId = R.string.alert_connection_failed)
     }
 
     override fun disconnectAndClean() {
+        stopScan()
+        candidateAddress = null
+        pendingCommand = false
         mainHandler.removeCallbacks(rssiPoller)
         mainHandler.removeCallbacks(thermalSafetyRunnable)
         val wasHeating = _vestState.value.isAnyZoneHeating
@@ -464,7 +517,8 @@ class DirectJacketController(private val context: Context) : JacketController {
             currentRssi = null,
             neckLevel = 0,
             backLevel = 0,
-            bellyLevel = 0
+            bellyLevel = 0,
+            isHardwareOff = false
         )
         if (wasHeating) {
             triggerHaptic(isWarning = true)

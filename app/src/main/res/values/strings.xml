@@ -84,6 +84,9 @@
     <string name="alert_ble_scanner_unavailable">BLE Scanner unavailable.</string>
     <string name="alert_vest_not_found">Vest not found. Bring watch closer.</string>
     <string name="alert_scan_failed">Scan failed (%d).</string>
+    <string name="alert_connection_failed">Bluetooth connection failed. Tap Connect to retry.</string>
+    <string name="alert_service_missing">Required Bluetooth service or notification is missing.</string>
+    <string name="alert_pairing_required">Pair the gateway securely in Bluetooth settings, then reconnect.</string>
     <string name="alert_proximity_scan">Too far (%d dBm). Bring watch &lt; 1 m.</string>
     <string name="alert_proximity_command">Blocked: Bring watch &lt; 1 m.</string>
 
@@ -130,7 +133,7 @@
 
     <!-- Battery KeepAlive -->
     <string name="keepalive_title">🔋 Battery KeepAlive</string>
-    <string name="keepalive_desc_on">Active: micro-pulses every 22s</string>
+    <string name="keepalive_desc_on">Active: no-heat command every 30s</string>
     <string name="keepalive_desc_off">Disabled: battery sleep possible</string>
 
     <!-- 90-Minute Safety -->

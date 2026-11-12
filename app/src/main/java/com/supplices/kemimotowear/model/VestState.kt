@@ -57,7 +57,8 @@ data class VestState(
     val continuousHeatingSeconds: Long = 0L,
     val isSafetyShutdownTriggered: Boolean = false,
     val isSafety90mEnabled: Boolean = true,
-    val isPairingScanning: Boolean = false
+    val isPairingScanning: Boolean = false,
+    val isHardwareOff: Boolean = false
 ) {
     /** True if at least one heating zone is actively drawing battery power */
     val isAnyZoneHeating: Boolean

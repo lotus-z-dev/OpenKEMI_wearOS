@@ -84,6 +84,9 @@
     <string name="alert_ble_scanner_unavailable">Scanner BLE indisponible.</string>
     <string name="alert_vest_not_found">Gilet introuvable. Approchez la montre.</string>
     <string name="alert_scan_failed">Échec du scan (%d).</string>
+    <string name="alert_connection_failed">Échec de connexion Bluetooth. Touchez Connecter pour réessayer.</string>
+    <string name="alert_service_missing">Service Bluetooth ou notification requis introuvable.</string>
+    <string name="alert_pairing_required">Associez la passerelle de façon sécurisée dans les réglages Bluetooth, puis reconnectez.</string>
     <string name="alert_proximity_scan">Trop loin (%d dBm). Approchez &lt; 1 m.</string>
     <string name="alert_proximity_command">Bloqué : Approchez &lt; 1 m.</string>
 
@@ -130,7 +133,7 @@
 
     <!-- Maintien Batterie KeepAlive -->
     <string name="keepalive_title">🔋 Maintien Batterie</string>
-    <string name="keepalive_desc_on">Actif : micro-impulsions 22s</string>
+    <string name="keepalive_desc_on">Actif : commande sans chauffe aux 30 s</string>
     <string name="keepalive_desc_off">Désactivé : veille autorisée</string>
 
     <!-- Sécurité 90 Minutes -->

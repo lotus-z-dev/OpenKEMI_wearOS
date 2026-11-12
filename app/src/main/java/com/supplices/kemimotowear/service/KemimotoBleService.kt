@@ -80,7 +80,7 @@ class KemimotoBleService : Service() {
         val savedModeOrdinal = prefs.getInt(KEY_SELECTED_MODE, VestMode.DIRECT.ordinal)
         val initialMode = VestMode.entries.getOrElse(savedModeOrdinal) { VestMode.DIRECT }
 
-        val isKeepAlive = prefs.getBoolean(KEY_KEEPALIVE_ENABLED, false)
+        val isKeepAlive = prefs.getBoolean(KEY_KEEPALIVE_ENABLED, true)
         val isSafety90m = prefs.getBoolean(KEY_SAFETY_90M_ENABLED, true)
 
         _combinedState.value = _combinedState.value.copy(
@@ -145,12 +145,10 @@ class KemimotoBleService : Service() {
                     !state.isAnyZoneHeating &&
                     !state.isCriticalCutoff) {
                     secondCounter++
-                    if (secondCounter >= 22) {
+                    if (secondCounter >= 30) {
                         secondCounter = 0
-                        // Send micro-pulse (600ms on level 1, then back to 0) to maintain power bank circuit
-                        activeController.setZoneLevel("neck", 1)
-                        delay(600L)
-                        activeController.setZoneLevel("neck", 0)
+                        // Exercise the vest controller while keeping every heating zone off.
+                        activeController.keepAliveWithoutHeating()
                     }
                 } else {
                     secondCounter = 0
@@ -217,8 +215,7 @@ class KemimotoBleService : Service() {
         prefs.edit().putInt(KEY_SELECTED_MODE, mode.ordinal).apply()
         bindActiveControllerState()
 
-        // Auto-connect with the new controller
-        activeController.startScanAndConnect()
+        // The user starts the selected controller after Bluetooth permissions are granted.
     }
 
     /**
@@ -232,6 +229,10 @@ class KemimotoBleService : Service() {
         stateCollectionJob?.cancel()
         stateCollectionJob = serviceScope.launch {
             activeController.vestState.collect { controllerState ->
+                if (controllerState.isHardwareOff && !_combinedState.value.isHardwareOff) {
+                    // A vest-button shutdown cancels pending profile steps.
+                    profileManager.stopProfile()
+                }
                 updateNotification(controllerState)
                 _combinedState.value = controllerState.copy(
                     activeProfile = profileManager.activeProfile.value,

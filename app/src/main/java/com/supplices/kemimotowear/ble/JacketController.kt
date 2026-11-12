@@ -68,6 +68,9 @@ interface JacketController {
      */
     fun setUserCadence(state: Int)
 
+    /** Sends an all-off control frame without energizing a heating zone. */
+    fun keepAliveWithoutHeating()
+
     /**
      * Disconnects active GATT session, cancels timers, and releases Bluetooth resources.
      */

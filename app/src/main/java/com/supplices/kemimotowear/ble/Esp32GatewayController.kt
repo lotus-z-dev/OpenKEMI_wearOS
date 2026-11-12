@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
+import java.util.ArrayDeque
 
 /**
  * Controller implementation communicating with the ESP32-C6 Intelligent Gateway.
@@ -56,6 +57,8 @@ class Esp32GatewayController(private val context: Context) : JacketController {
     private var charCadence: BluetoothGattCharacteristic? = null
     private var charReset: BluetoothGattCharacteristic? = null
     private var charMode: BluetoothGattCharacteristic? = null
+    private val pendingDescriptors = ArrayDeque<BluetoothGattDescriptor>()
+    @Volatile private var pendingCommand = false
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -122,7 +125,7 @@ class Esp32GatewayController(private val context: Context) : JacketController {
             return
         }
 
-        if (_vestState.value.connectionStatus == ConnectionStatus.CONNECTED) return
+        if (_vestState.value.connectionStatus != ConnectionStatus.DISCONNECTED) return
 
         _vestState.value = _vestState.value.copy(
             connectionStatus = ConnectionStatus.SCANNING,
@@ -209,29 +212,35 @@ class Esp32GatewayController(private val context: Context) : JacketController {
         )
 
         // Store bonded device MAC securely in encrypted preferences
-        securePrefs.edit().putString(KEY_LAST_BONDED_MAC, device.address).apply()
+        try {
+            bluetoothGatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+        } catch (_: Exception) {
+            failConnection(R.string.alert_connection_failed)
+        }
+    }
 
-        bluetoothGatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+    private fun failConnection(message: Int) {
+        disconnectAndClean()
+        _vestState.value = _vestState.value.copy(securityRejectionResId = message, securityRejectionArg = null)
     }
 
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                _vestState.value = _vestState.value.copy(
-                    connectionStatus = ConnectionStatus.CONNECTED,
-                    securityRejectionResId = null,
-                    securityRejectionArg = null
-                )
-                gatt?.discoverServices()
-                mainHandler.post(rssiPoller)
+            if (gatt !== bluetoothGatt) return
+            if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
+                if (gatt?.discoverServices() != true) failConnection(R.string.alert_connection_failed)
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 disconnectAndClean()
+            } else {
+                failConnection(R.string.alert_connection_failed)
             }
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
+            if (gatt !== bluetoothGatt) return
             if (status == BluetoothGatt.GATT_SUCCESS && gatt != null) {
-                val service = gatt.getService(GatewayProtocol.SERVICE_UUID) ?: return
+                val service = gatt.getService(GatewayProtocol.SERVICE_UUID)
+                    ?: return failConnection(R.string.alert_service_missing)
 
                 charCommand = service.getCharacteristic(GatewayProtocol.CHAR_COMMAND_UUID)
                 charTelemetry = service.getCharacteristic(GatewayProtocol.CHAR_TELEMETRY_UUID)
@@ -239,15 +248,31 @@ class Esp32GatewayController(private val context: Context) : JacketController {
                 charCadence = service.getCharacteristic(GatewayProtocol.CHAR_CADENCE_UUID)
                 charReset = service.getCharacteristic(GatewayProtocol.CHAR_RESET_UUID)
                 charMode = service.getCharacteristic(GatewayProtocol.CHAR_MODE_UUID)
+                if (charCommand == null || charTelemetry == null || charGauge == null ||
+                    charCadence == null || charReset == null || charMode == null) {
+                    failConnection(R.string.alert_service_missing)
+                    return
+                }
+
+                if (gatt.device.bondState != BluetoothDevice.BOND_BONDED) {
+                    failConnection(R.string.alert_pairing_required)
+                    return
+                }
 
                 // Subscribe to notifications for Command echo, Telemetry, and Fuel Gauge
                 subscribeToCharacteristic(gatt, charCommand)
                 subscribeToCharacteristic(gatt, charTelemetry)
                 subscribeToCharacteristic(gatt, charGauge)
-
-                gatt.readRemoteRssi()
-                sendCurrentLevels()
+                writeNextDescriptor(gatt)
+            } else {
+                failConnection(R.string.alert_connection_failed)
             }
+        }
+
+        override fun onDescriptorWrite(gatt: BluetoothGatt?, descriptor: BluetoothGattDescriptor?, status: Int) {
+            if (gatt !== bluetoothGatt) return
+            if (status != BluetoothGatt.GATT_SUCCESS) return failConnection(R.string.alert_connection_failed)
+            writeNextDescriptor(gatt ?: return)
         }
 
         override fun onReadRemoteRssi(gatt: BluetoothGatt?, rssi: Int, status: Int) {
@@ -259,6 +284,7 @@ class Esp32GatewayController(private val context: Context) : JacketController {
                     securityRejectionResId = if (!withinProximity) R.string.alert_proximity_command_gateway else null,
                     securityRejectionArg = if (!withinProximity) rssi else null
                 )
+                if (withinProximity && pendingCommand) sendCurrentLevels()
             }
         }
 
@@ -283,16 +309,39 @@ class Esp32GatewayController(private val context: Context) : JacketController {
     }
 
     private fun subscribeToCharacteristic(gatt: BluetoothGatt, char: BluetoothGattCharacteristic?) {
-        if (char == null) return
-        gatt.setCharacteristicNotification(char, true)
-        val descriptor = char.getDescriptor(CCCD_UUID) ?: return
+        if (char == null || !gatt.setCharacteristicNotification(char, true)) {
+            failConnection(R.string.alert_connection_failed)
+            return
+        }
+        val descriptor = char.getDescriptor(CCCD_UUID) ?: run {
+            failConnection(R.string.alert_service_missing)
+            return
+        }
+        pendingDescriptors.addLast(descriptor)
+    }
+
+    private fun writeNextDescriptor(gatt: BluetoothGatt) {
+        if (gatt !== bluetoothGatt) return
+        if (pendingDescriptors.isEmpty()) {
+            securePrefs.edit().putString(KEY_LAST_BONDED_MAC, gatt.device.address).apply()
+            _vestState.value = _vestState.value.copy(
+                connectionStatus = ConnectionStatus.CONNECTED,
+                pairedMacAddress = gatt.device.address,
+                securityRejectionResId = null,
+                securityRejectionArg = null
+            )
+            if (!gatt.readRemoteRssi()) failConnection(R.string.alert_connection_failed)
+            else mainHandler.postDelayed(rssiPoller, 1500L)
+            return
+        }
+        val descriptor = pendingDescriptors.removeFirst()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+            if (gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) != BluetoothStatusCodes.SUCCESS) failConnection(R.string.alert_connection_failed)
         } else {
             @Suppress("DEPRECATION")
             descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             @Suppress("DEPRECATION")
-            gatt.writeDescriptor(descriptor)
+            if (!gatt.writeDescriptor(descriptor)) failConnection(R.string.alert_connection_failed)
         }
     }
 
@@ -317,19 +366,33 @@ class Esp32GatewayController(private val context: Context) : JacketController {
             }
             GatewayProtocol.CHAR_TELEMETRY_UUID -> {
                 val telemetry = KemimotoProtocol.parseTelemetry(payload) ?: return
-                _vestState.value = _vestState.value.copy(
+                val previous = _vestState.value
+                val levels = telemetry.heatingLevels
+                val hardwareOff = levels != null && previous.isAnyZoneHeating &&
+                    levels.first == 0 && levels.second == 0 && levels.third == 0
+                if (hardwareOff) pendingCommand = false
+                _vestState.value = previous.copy(
                     batteryPercent = telemetry.batteryPercent,
-                    timerRemainingSeconds = telemetry.timerRemainingSeconds
+                    timerRemainingSeconds = telemetry.timerRemainingSeconds,
+                    neckLevel = levels?.first ?: previous.neckLevel,
+                    backLevel = levels?.second ?: previous.backLevel,
+                    bellyLevel = levels?.third ?: previous.bellyLevel,
+                    isHardwareOff = previous.isHardwareOff || hardwareOff
                 )
             }
             GatewayProtocol.CHAR_COMMAND_UUID -> {
                 if (payload.size >= 14 && payload[0] == 0xAA.toByte()) {
-                    _vestState.value = _vestState.value.copy(
-                        neckLevel = payload[5].toInt() and 0xFF,
-                        backLevel = payload[6].toInt() and 0xFF,
-                        bellyLevel = payload[7].toInt() and 0xFF,
-                        isStealthMode = (payload[8].toInt() and 0xFF) == 0x01
-                    )
+                    val previous = _vestState.value
+                    val levels = (5..7).map { payload[it].toInt() and 0xFF }
+                    if (levels.all { it in 0..3 }) {
+                        val hardwareOff = previous.isAnyZoneHeating && levels.all { it == 0 }
+                        if (hardwareOff) pendingCommand = false
+                        _vestState.value = previous.copy(
+                            neckLevel = levels[0], backLevel = levels[1], bellyLevel = levels[2],
+                            isStealthMode = (payload[8].toInt() and 0xFF) == 0x01,
+                            isHardwareOff = previous.isHardwareOff || hardwareOff
+                        )
+                    }
                 }
             }
         }
@@ -373,8 +436,10 @@ class Esp32GatewayController(private val context: Context) : JacketController {
         _vestState.value = _vestState.value.copy(
             neckLevel = clampedNeck,
             backLevel = clampedBack,
-            bellyLevel = clampedBelly
+            bellyLevel = clampedBelly,
+            isHardwareOff = false
         )
+        pendingCommand = true
         sendCurrentLevels()
     }
 
@@ -387,18 +452,21 @@ class Esp32GatewayController(private val context: Context) : JacketController {
             "ventre", "belly", "bottom" -> current.copy(bellyLevel = clamped)
             else -> current.copy(neckLevel = clamped, backLevel = clamped, bellyLevel = clamped)
         }
-        _vestState.value = newState
+        _vestState.value = newState.copy(isHardwareOff = false)
+        pendingCommand = true
         sendCurrentLevels()
     }
 
     override fun toggleStealthMode() {
         val newStealth = !_vestState.value.isStealthMode
         _vestState.value = _vestState.value.copy(isStealthMode = newStealth)
+        pendingCommand = true
         sendCurrentLevels()
     }
 
     override fun setStealthMode(enabled: Boolean) {
         _vestState.value = _vestState.value.copy(isStealthMode = enabled)
+        pendingCommand = true
         sendCurrentLevels()
     }
 
@@ -425,6 +493,11 @@ class Esp32GatewayController(private val context: Context) : JacketController {
         _vestState.value = _vestState.value.copy(userCadenceState = state)
     }
 
+    override fun keepAliveWithoutHeating() {
+        if (_vestState.value.connectionStatus == ConnectionStatus.CONNECTED &&
+            !_vestState.value.isAnyZoneHeating) sendCurrentLevels()
+    }
+
     private fun sendCurrentLevels() {
         val gatt = bluetoothGatt ?: return
         val char = charCommand ?: return
@@ -432,11 +505,11 @@ class Esp32GatewayController(private val context: Context) : JacketController {
 
         // Proximity constraint: strictly enforce < 1.5m (RSSI >= -75 dBm)
         val rssi = state.currentRssi
-        val withinProximity = rssi == null || rssi >= PROXIMITY_RSSI_THRESHOLD_1_5M
+        val withinProximity = rssi != null && rssi >= PROXIMITY_RSSI_THRESHOLD_1_5M
         if (!withinProximity) {
             _vestState.value = state.copy(
                 securityRejectionResId = R.string.alert_proximity_command_gateway,
-                securityRejectionArg = rssi
+                securityRejectionArg = null
             )
             // Block unauthenticated command transmission beyond perimeter
             return
@@ -451,7 +524,8 @@ class Esp32GatewayController(private val context: Context) : JacketController {
             isStealthMode = state.isStealthMode
         )
 
-        writeChar(gatt, char, packet)
+        if (writeChar(gatt, char, packet)) pendingCommand = false
+        else _vestState.value = _vestState.value.copy(securityRejectionResId = R.string.alert_connection_failed)
     }
 
     override fun clearGatewayJacketBonding() {
@@ -461,9 +535,9 @@ class Esp32GatewayController(private val context: Context) : JacketController {
         writeChar(gatt, char, packet)
     }
 
-    private fun writeChar(gatt: BluetoothGatt, char: BluetoothGattCharacteristic, value: ByteArray) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.writeCharacteristic(char, value, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
+    private fun writeChar(gatt: BluetoothGatt, char: BluetoothGattCharacteristic, value: ByteArray): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            gatt.writeCharacteristic(char, value, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) == BluetoothStatusCodes.SUCCESS
         } else {
             @Suppress("DEPRECATION")
             char.value = value
@@ -475,6 +549,9 @@ class Esp32GatewayController(private val context: Context) : JacketController {
     }
 
     override fun disconnectAndClean() {
+        stopScan()
+        pendingDescriptors.clear()
+        pendingCommand = false
         mainHandler.removeCallbacks(rssiPoller)
         val wasHeating = _vestState.value.isAnyZoneHeating
         try {
@@ -493,7 +570,8 @@ class Esp32GatewayController(private val context: Context) : JacketController {
             currentRssi = null,
             neckLevel = 0,
             backLevel = 0,
-            bellyLevel = 0
+            bellyLevel = 0,
+            isHardwareOff = false
         )
         if (wasHeating) {
             triggerHaptic(isWarning = true)

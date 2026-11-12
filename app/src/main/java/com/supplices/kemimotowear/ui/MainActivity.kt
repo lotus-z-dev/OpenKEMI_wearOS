@@ -2,6 +2,8 @@ package com.supplices.kemimotowear.ui
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
+import android.Manifest
+import android.content.pm.PackageManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -20,6 +22,7 @@ import android.os.VibratorManager
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -81,6 +84,40 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private var stepSensor: Sensor? = null
     private var lastStepCount = 0
     private var lastStepTimestamp = 0L
+    private var pendingBluetoothAction: (() -> Unit)? = null
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        val action = pendingBluetoothAction
+        pendingBluetoothAction = null
+        if (grants.values.all { it } && bluetoothReady()) action?.invoke()
+        else Toast.makeText(this, R.string.alert_bluetooth_disabled, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun bluetoothReady(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
+                checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)) return false
+        val adapter = (getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
+        if (adapter?.isEnabled != true) {
+            ensureBluetoothEnabled()
+            return false
+        }
+        return true
+    }
+
+    private fun withBluetooth(action: () -> Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val missing = arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+                .filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
+            if (missing.isNotEmpty()) {
+                pendingBluetoothAction = action
+                permissionLauncher.launch(missing.toTypedArray())
+                return
+            }
+        }
+        if (bluetoothReady()) action()
+    }
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
@@ -138,9 +175,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                         bleServiceState.value?.dismissSafetyAlert()
                     },
                     onStartPairingScan = {
-                        val svc = bleServiceState.value
-                        ensureBluetoothEnabled()
-                        svc?.activeController?.startPairingScan()
+                        withBluetooth { bleServiceState.value?.activeController?.startPairingScan() }
                     },
                     onStopScan = {
                         bleServiceState.value?.activeController?.stopScan()
@@ -154,8 +189,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                         Toast.makeText(this@MainActivity, getString(R.string.esp32_toast_jacket_cleared), Toast.LENGTH_SHORT).show()
                     },
                     onConnectScan = {
-                        ensureBluetoothEnabled()
-                        bleServiceState.value?.activeController?.startScanAndConnect()
+                        withBluetooth { bleServiceState.value?.activeController?.startScanAndConnect() }
                     },
                     onDisconnect = {
                         bleServiceState.value?.activeController?.disconnectAndClean()
@@ -469,6 +503,7 @@ fun KemimotoWearScreen(
                     onSetPreset = onSetPreset,
                     onTurnOffAll = onTurnOffAll,
                     onDismissSafetyAlert = onDismissSafetyAlert,
+                    onConnectScan = onConnectScan,
                     onNavigateToSettings = {
                         coroutineScope.launch { pagerState.animateScrollToPage(0) }
                     },
@@ -1386,6 +1421,7 @@ fun HomePanel(
     onSetPreset: (Int) -> Unit,
     onTurnOffAll: () -> Unit,
     onDismissSafetyAlert: () -> Unit,
+    onConnectScan: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToFunctions: () -> Unit
 ) {
@@ -1505,7 +1541,7 @@ fun HomePanel(
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Button(
-                            onClick = onNavigateToSettings,
+                            onClick = onConnectScan,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(28.dp),
@@ -1616,7 +1652,7 @@ fun HomePanel(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Button(
-                        onClick = onNavigateToSettings,
+                        onClick = onConnectScan,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(28.dp),

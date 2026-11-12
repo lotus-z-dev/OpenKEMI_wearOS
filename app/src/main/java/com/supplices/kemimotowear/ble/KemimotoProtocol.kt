@@ -85,7 +85,8 @@ object KemimotoProtocol {
      */
     data class TelemetryResult(
         val batteryPercent: Int,
-        val timerRemainingSeconds: Int
+        val timerRemainingSeconds: Int,
+        val heatingLevels: Triple<Int, Int, Int>?
     )
 
     /**
@@ -109,10 +110,14 @@ object KemimotoProtocol {
         val timerMsb = payload[11].toInt() and 0xFF
         val timerLsb = payload[12].toInt() and 0xFF
         val timerSeconds = (timerMsb shl 8) or timerLsb
+        // The vendor's new-heater parser reads zone levels from bytes 5, 6 and 7.
+        val levels = (5..7).map { payload[it].toInt() and 0xFF }
+        val heatingLevels = if (levels.all { it in 0..3 }) Triple(levels[0], levels[1], levels[2]) else null
 
         return TelemetryResult(
             batteryPercent = battery,
-            timerRemainingSeconds = timerSeconds
+            timerRemainingSeconds = timerSeconds,
+            heatingLevels = heatingLevels
         )
     }
 }
