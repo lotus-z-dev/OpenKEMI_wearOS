@@ -194,4 +194,23 @@
     <string name="btn_buy_vest_amazon">🛒 Acheter la veste Kemimoto (Amazon)</string>
     <string name="buy_vest_hint">Pas encore de veste ? Voir sur Amazon</string>
     <string name="buy_vest_url">https://link.amazon/B005JxEoX</string>
+
+    <!-- Chaînes UI et Notifications -->
+    <string name="zone_neck_short">Col</string>
+    <string name="zone_back_short">Dos</string>
+    <string name="zone_belly_short">Ventre</string>
+    <string name="notif_heating_prefix">Chauffe :</string>
+    <string name="pairing_strict_proximity">Scan strict de proximité</string>
+    <string name="tap_to_disconnect">Touchez pour déconnecter</string>
+    <string name="tap_to_reconnect">Touchez pour reconnecter</string>
+    <string name="vest_not_paired_short">Veste non associée</string>
+    <string name="configure_arrow">Configurer →</string>
+    <string name="browser_not_found">Navigateur introuvable</string>
+    <string name="tap_to_acknowledge">Touchez pour acquitter</string>
+    <string name="connected_vest_cd">Veste connectée</string>
+    <string name="battery_virtual_title">Batterie Virtuelle</string>
+    <string name="battery_vest_title">Batterie Veste</string>
+    <string name="battery_consumed_format">Conso : %d mAh</string>
+    <string name="profile_running_suffix">En cours</string>
+    <string name="reset_battery_desc">Recalibre la jauge à 100 %</string>
 </resources>

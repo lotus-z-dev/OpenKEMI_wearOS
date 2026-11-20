@@ -193,4 +193,23 @@
     <string name="btn_buy_vest_amazon">🛒 Buy Kemimoto Vest (Amazon)</string>
     <string name="buy_vest_hint">No vest yet? Get it on Amazon</string>
     <string name="buy_vest_url">https://link.amazon/B005JxEoX</string>
+
+    <!-- Localized UI & Notification Helpers -->
+    <string name="zone_neck_short">Neck</string>
+    <string name="zone_back_short">Back</string>
+    <string name="zone_belly_short">Belly</string>
+    <string name="notif_heating_prefix">Heating:</string>
+    <string name="pairing_strict_proximity">Strict proximity scan</string>
+    <string name="tap_to_disconnect">Tap to disconnect</string>
+    <string name="tap_to_reconnect">Tap to reconnect</string>
+    <string name="vest_not_paired_short">Jacket not paired</string>
+    <string name="configure_arrow">Configure →</string>
+    <string name="browser_not_found">Browser not found</string>
+    <string name="tap_to_acknowledge">Tap to acknowledge</string>
+    <string name="connected_vest_cd">Connected jacket</string>
+    <string name="battery_virtual_title">Virtual Battery</string>
+    <string name="battery_vest_title">Jacket Battery</string>
+    <string name="battery_consumed_format">Used: %d mAh</string>
+    <string name="profile_running_suffix">Running</string>
+    <string name="reset_battery_desc">Recalibrates gauge to 100%</string>
 </resources>

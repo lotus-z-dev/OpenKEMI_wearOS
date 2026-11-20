@@ -1,31 +1,31 @@
-# OpenKEMI Wear OS - Mentions Légales & Droits d'Auteur (Legal Notice)
+# OpenKEMI Wear OS — Legal Notices & Third-Party Attributions
 
-## 1. Marques de Commerce (Trademarks)
-Kemimoto® est une marque déposée appartenant à ses détenteurs et fabricants respectifs.
-OpenKEMI est un projet communautaire tiers libre et indépendant, développé à des fins de contrôle domotique et d'interopérabilité locale. 
-Le projet OpenKEMI n'est en aucune manière affilié, approuvé, certifié ou soutenu par Kemimoto®.
+## 1. Trademarks
+Kemimoto® is a registered trademark belonging to its respective owners and manufacturers.
+OpenKEMI is an independent, community-maintained open-source project created for local smart-home and wearable interoperability.
+OpenKEMI is not affiliated with, endorsed by, certified by, or sponsored by Kemimoto®.
 
-## 2. Typographie & Polices de Caractères
-- **Police Ubuntu (Ubuntu-Regular, Ubuntu-Medium, Ubuntu-Bold) :**
-  © 2011 Canonical Ltd. 
-  Distribuée et incorporée sous les termes de la licence libre **Ubuntu Font Licence Version 1.0**.
+## 2. Typography & Fonts
+- **Ubuntu Font Family (Ubuntu-Regular, Ubuntu-Medium, Ubuntu-Bold):**
+  Copyright (c) 2011 Canonical Ltd.
+  Distributed and embedded under the terms of the **Ubuntu Font Licence Version 1.0**:
   https://launchpad.net/ubuntu-font-licence
 
-## 3. Bibliothèques Logicielles Tierces & Composants
-Ce projet intègre les bibliothèques logicielles open-source suivantes :
+## 3. Third-Party Open-Source Libraries
+This project incorporates the following open-source libraries:
 
-- **Android Jetpack & Wear OS Compose :**
-  © The Android Open Source Project / Google LLC
-  Licence : Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+- **Android Jetpack & Wear OS Compose:**
+  Copyright (c) The Android Open Source Project / Google LLC
+  License: Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
 
-- **Horologist UI Compose Layout :**
-  © Google LLC
-  Licence : Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+- **Horologist UI Compose Layout:**
+  Copyright (c) Google LLC
+  License: Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
 
-- **Kotlin & kotlinx.coroutines :**
-  © JetBrains s.r.o. and Kotlin Programming Language contributors
-  Licence : Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+- **Kotlin & kotlinx.coroutines:**
+  Copyright (c) JetBrains s.r.o. and Kotlin contributors
+  License: Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
 
-- **AndroidX Security Crypto :**
-  © The Android Open Source Project / Google LLC
-  Licence : Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+- **AndroidX Security Crypto:**
+  Copyright (c) The Android Open Source Project / Google LLC
+  License: Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)

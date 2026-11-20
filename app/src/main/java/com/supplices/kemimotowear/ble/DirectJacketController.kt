@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.bluetooth.*
 import android.bluetooth.le.*
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -11,6 +12,8 @@ import android.os.ParcelUuid
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.supplices.kemimotowear.R
 import com.supplices.kemimotowear.model.ConnectionStatus
 import com.supplices.kemimotowear.model.VestMode
@@ -23,6 +26,11 @@ import java.util.UUID
 /**
  * Direct BLE Controller implementation communicating directly with the Kemimoto heated garment.
  * Operating Mode: DIRECT (Watch <-> Jacket).
+ *
+ * Security controls:
+ * - Persists paired garment MAC in Android Keystore-backed EncryptedSharedPreferences.
+ * - Requires < 1.0 m proximity (RSSI >= -70 dBm) for pairing and energizing heating elements.
+ * - Always permits emergency shutoff (0, 0, 0) on an active connection.
  */
 @SuppressLint("MissingPermission")
 class DirectJacketController(private val context: Context) : JacketController {
@@ -30,7 +38,8 @@ class DirectJacketController(private val context: Context) : JacketController {
     companion object {
         const val PROXIMITY_RSSI_THRESHOLD_1M_FREE_SPACE = -70
         private val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-        private const val PREFS_NAME = "openkemi_direct_prefs"
+        private const val LEGACY_PREFS_NAME = "openkemi_direct_prefs"
+        private const val SECURE_PREFS_NAME = "openkemi_direct_secure_prefs"
         private const val KEY_SAVED_MAC = "saved_vest_mac"
     }
 
@@ -39,8 +48,36 @@ class DirectJacketController(private val context: Context) : JacketController {
     private val bluetoothAdapter: BluetoothAdapter?
         get() = bluetoothManager?.adapter
 
-    private val prefs by lazy {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val prefs: SharedPreferences by lazy {
+        val secure = try {
+            val masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            EncryptedSharedPreferences.create(
+                context,
+                SECURE_PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (_: Exception) {
+            context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+        }
+
+        // One-time transparent migration from legacy plaintext SharedPreferences
+        if (secure !== context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)) {
+            try {
+                val legacy = context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+                val legacyMac = legacy.getString(KEY_SAVED_MAC, null)
+                if (legacyMac != null && secure.getString(KEY_SAVED_MAC, null) == null) {
+                    secure.edit().putString(KEY_SAVED_MAC, legacyMac).apply()
+                }
+                if (legacyMac != null) {
+                    legacy.edit().remove(KEY_SAVED_MAC).apply()
+                }
+            } catch (_: Exception) {}
+        }
+        secure
     }
 
     private var bluetoothGatt: BluetoothGatt? = null
@@ -48,16 +85,17 @@ class DirectJacketController(private val context: Context) : JacketController {
     private var notifyCharacteristic: BluetoothGattCharacteristic? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    private var scanTimeoutRunnable: Runnable? = null
 
     private val _vestState = MutableStateFlow(
         VestState(
             mode = VestMode.DIRECT,
-            pairedMacAddress = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY_SAVED_MAC, null)
+            pairedMacAddress = try { prefs.getString(KEY_SAVED_MAC, null) } catch (_: Exception) { null }
         )
     )
     override val vestState: StateFlow<VestState> = _vestState.asStateFlow()
 
-    private var isPairingMode = false
+    @Volatile private var isPairingMode = false
     private var candidateAddress: String? = null
     @Volatile private var pendingCommand = false
 
@@ -94,6 +132,11 @@ class DirectJacketController(private val context: Context) : JacketController {
         executeScan()
     }
 
+    private fun cancelScanTimeout() {
+        scanTimeoutRunnable?.let { mainHandler.removeCallbacks(it) }
+        scanTimeoutRunnable = null
+    }
+
     private fun executeScan() {
         val adapter = bluetoothAdapter
         if (adapter == null || !adapter.isEnabled) {
@@ -127,7 +170,8 @@ class DirectJacketController(private val context: Context) : JacketController {
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
 
-        mainHandler.postDelayed({
+        cancelScanTimeout()
+        val timeout = Runnable {
             if (_vestState.value.connectionStatus == ConnectionStatus.SCANNING) {
                 stopScan()
                 _vestState.value = _vestState.value.copy(
@@ -137,11 +181,14 @@ class DirectJacketController(private val context: Context) : JacketController {
                     securityRejectionArg = null
                 )
             }
-        }, 15000L)
+        }
+        scanTimeoutRunnable = timeout
+        mainHandler.postDelayed(timeout, 15000L)
 
         try {
             bleScanner.startScan(listOf(scanFilter), scanSettings, scanCallback)
         } catch (_: Exception) {
+            cancelScanTimeout()
             _vestState.value = _vestState.value.copy(
                 connectionStatus = ConnectionStatus.DISCONNECTED,
                 isPairingScanning = false
@@ -150,6 +197,7 @@ class DirectJacketController(private val context: Context) : JacketController {
     }
 
     override fun stopScan() {
+        cancelScanTimeout()
         try {
             bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
         } catch (_: Exception) {}
@@ -157,7 +205,9 @@ class DirectJacketController(private val context: Context) : JacketController {
     }
 
     override fun forgetPairedDevice() {
-        prefs.edit().remove(KEY_SAVED_MAC).apply()
+        try {
+            prefs.edit().remove(KEY_SAVED_MAC).apply()
+        } catch (_: Exception) {}
         disconnectAndClean()
         _vestState.value = _vestState.value.copy(
             pairedMacAddress = null,
@@ -166,11 +216,13 @@ class DirectJacketController(private val context: Context) : JacketController {
     }
 
     override fun isDevicePaired(): Boolean {
-        return prefs.getString(KEY_SAVED_MAC, null) != null
+        return try {
+            prefs.getString(KEY_SAVED_MAC, null) != null
+        } catch (_: Exception) { false }
     }
 
     override fun clearGatewayJacketBonding() {
-        // Sans effet en mode direct
+        // No-op in direct watch-to-jacket mode
     }
 
     private val scanCallback = object : ScanCallback() {
@@ -178,7 +230,7 @@ class DirectJacketController(private val context: Context) : JacketController {
             result?.let { scanResult ->
                 val rssi = scanResult.rssi
                 val device = scanResult.device
-                val savedMac = prefs.getString(KEY_SAVED_MAC, null)
+                val savedMac = try { prefs.getString(KEY_SAVED_MAC, null) } catch (_: Exception) { null }
 
                 _vestState.value = _vestState.value.copy(
                     currentRssi = rssi,
@@ -206,7 +258,7 @@ class DirectJacketController(private val context: Context) : JacketController {
                             connectToDevice(device)
                         }
                     } else {
-                        // First-time fallback
+                        // First-time fallback within 1 m proximity
                         if (rssi >= PROXIMITY_RSSI_THRESHOLD_1M_FREE_SPACE) {
                             stopScan()
                             candidateAddress = device.address
@@ -218,6 +270,7 @@ class DirectJacketController(private val context: Context) : JacketController {
         }
 
         override fun onScanFailed(errorCode: Int) {
+            cancelScanTimeout()
             _vestState.value = _vestState.value.copy(
                 connectionStatus = ConnectionStatus.DISCONNECTED,
                 isPairingScanning = false,
@@ -274,7 +327,9 @@ class DirectJacketController(private val context: Context) : JacketController {
                     val descriptor = char.getDescriptor(CCCD_UUID)
                     if (descriptor != null) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            if (gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) != BluetoothStatusCodes.SUCCESS) failConnection(R.string.alert_connection_failed)
+                            if (gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) != BluetoothStatusCodes.SUCCESS) {
+                                failConnection(R.string.alert_connection_failed)
+                            }
                         } else {
                             @Suppress("DEPRECATION")
                             descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
@@ -294,11 +349,17 @@ class DirectJacketController(private val context: Context) : JacketController {
             if (gatt !== bluetoothGatt) return
             if (status != BluetoothGatt.GATT_SUCCESS) return failConnection(R.string.alert_connection_failed)
             candidateAddress?.let { address ->
-                prefs.edit().putString(KEY_SAVED_MAC, address).apply()
+                try {
+                    prefs.edit().putString(KEY_SAVED_MAC, address).apply()
+                } catch (_: Exception) {}
                 candidateAddress = null
                 _vestState.value = _vestState.value.copy(pairedMacAddress = address)
             }
-            _vestState.value = _vestState.value.copy(connectionStatus = ConnectionStatus.CONNECTED, securityRejectionResId = null, securityRejectionArg = null)
+            _vestState.value = _vestState.value.copy(
+                connectionStatus = ConnectionStatus.CONNECTED,
+                securityRejectionResId = null,
+                securityRejectionArg = null
+            )
             if (gatt?.readRemoteRssi() != true) failConnection(R.string.alert_connection_failed)
             else mainHandler.postDelayed(rssiPoller, 1500L)
         }
@@ -458,7 +519,7 @@ class DirectJacketController(private val context: Context) : JacketController {
     }
 
     override fun setUserCadence(state: Int) {
-        _vestState.value = _vestState.value.copy(userCadenceState = state)
+        _vestState.value = _vestState.value.copy(userCadenceState = state.coerceIn(0, 3))
     }
 
     override fun keepAliveWithoutHeating() {
@@ -470,10 +531,12 @@ class DirectJacketController(private val context: Context) : JacketController {
         val gatt = bluetoothGatt ?: return
         val char = writeCharacteristic ?: return
         val state = _vestState.value
+        if (state.connectionStatus != ConnectionStatus.CONNECTED) return
 
-        // Require a measured RSSI before sending a heating command.
-        if (state.connectionStatus != ConnectionStatus.CONNECTED ||
-            state.currentRssi == null || !state.isWithinProximity) {
+        // Require a measured RSSI within 1 m before energizing any heating zone.
+        // Emergency shutoff (0, 0, 0) is always permitted on an active connection.
+        val requestsHeat = state.isAnyZoneHeating
+        if (requestsHeat && (state.currentRssi == null || !state.isWithinProximity)) {
             _vestState.value = state.copy(securityRejectionResId = R.string.alert_proximity_command)
             return
         }

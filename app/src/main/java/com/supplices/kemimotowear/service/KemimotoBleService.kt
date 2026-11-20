@@ -13,17 +13,18 @@ import com.supplices.kemimotowear.R
 import com.supplices.kemimotowear.ble.DirectJacketController
 import com.supplices.kemimotowear.ble.Esp32GatewayController
 import com.supplices.kemimotowear.ble.JacketController
-import com.supplices.kemimotowear.ble.KemimotoBleManager
-import com.supplices.kemimotowear.model.HeatingProfile
+import com.supplices.kemimotowear.model.ConnectionStatus
 import com.supplices.kemimotowear.model.PredefinedProfiles
 import com.supplices.kemimotowear.model.VestMode
 import com.supplices.kemimotowear.model.VestState
 import com.supplices.kemimotowear.routine.HeatingProfileManager
 import com.supplices.kemimotowear.ui.MainActivity
+import com.supplices.kemimotowear.util.SoundAlertHelper
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.Locale
 
 /**
  * Hardened Android Foreground Service maintaining BLE communication, controller polymorphism,
@@ -38,6 +39,10 @@ class KemimotoBleService : Service() {
         private const val KEY_SELECTED_MODE = "selected_vest_mode"
         private const val KEY_KEEPALIVE_ENABLED = "keepalive_enabled"
         private const val KEY_SAFETY_90M_ENABLED = "safety_90m_enabled"
+
+        private val ALLOWED_ZONES = setOf(
+            "all", "neck", "col", "top", "back", "dos", "mid", "belly", "ventre", "bottom"
+        )
     }
 
     private val binder = LocalBinder()
@@ -48,9 +53,6 @@ class KemimotoBleService : Service() {
         private set
     lateinit var activeController: JacketController
         private set
-
-    // Backward-compatibility alias for legacy callers
-    val bleManager: KemimotoBleManager by lazy { KemimotoBleManager(applicationContext) }
 
     lateinit var profileManager: HeatingProfileManager
         private set
@@ -141,7 +143,7 @@ class KemimotoBleService : Service() {
                 delay(1000L)
                 val state = _combinedState.value
                 if (state.isKeepAliveEnabled &&
-                    state.connectionStatus == com.supplices.kemimotowear.model.ConnectionStatus.CONNECTED &&
+                    state.connectionStatus == ConnectionStatus.CONNECTED &&
                     !state.isAnyZoneHeating &&
                     !state.isCriticalCutoff) {
                     secondCounter++
@@ -164,15 +166,18 @@ class KemimotoBleService : Service() {
             while (isActive) {
                 delay(1000L)
                 val state = _combinedState.value
-                if (state.connectionStatus == com.supplices.kemimotowear.model.ConnectionStatus.CONNECTED && state.isAnyZoneHeating) {
+                val heatingActive = state.connectionStatus == ConnectionStatus.CONNECTED &&
+                    (state.isAnyZoneHeating || state.isChoppedLowActive)
+                if (heatingActive) {
                     continuousHeatSeconds++
                     _combinedState.value = _combinedState.value.copy(continuousHeatingSeconds = continuousHeatSeconds)
                     if (state.isSafety90mEnabled && continuousHeatSeconds >= 5400L) { // 90 consecutive minutes
                         continuousHeatSeconds = 0L
-                        // Audible alarm beep on watch speaker
-                        com.supplices.kemimotowear.util.SoundAlertHelper.playSafetyBeep(applicationContext)
-                        // Cut off all heating
+                        SoundAlertHelper.playSafetyBeep(applicationContext)
                         profileManager.stopProfile()
+                        if (state.isChoppedLowActive) {
+                            activeController.setChoppedLowMode(false)
+                        }
                         activeController.setLevels(0, 0, 0)
                         _combinedState.value = _combinedState.value.copy(
                             continuousHeatingSeconds = 0L,
@@ -214,8 +219,6 @@ class KemimotoBleService : Service() {
 
         prefs.edit().putInt(KEY_SELECTED_MODE, mode.ordinal).apply()
         bindActiveControllerState()
-
-        // The user starts the selected controller after Bluetooth permissions are granted.
     }
 
     /**
@@ -248,45 +251,45 @@ class KemimotoBleService : Service() {
     }
 
     /**
-     * Dispatches commands originating from Gemini voice actions or Deep Links.
+     * Dispatches strictly validated commands originating from local App Shortcuts / Assistant actions.
+     * Administrative operations (mode switching, battery/bond resets) are intentionally excluded
+     * from external URI intents and are only accessible via direct watch UI interaction.
      */
     fun handleIntent(intent: Intent) {
-        val uri = intent.data
-        if (uri != null && uri.scheme == "kemimoto" && uri.host == "action") {
-            when (uri.getQueryParameter("command")) {
-                "heat" -> {
-                    val zone = uri.getQueryParameter("zone") ?: "all"
-                    val level = uri.getQueryParameter("level")?.toIntOrNull() ?: 0
-                    profileManager.stopProfile()
-                    activeController.setZoneLevel(zone, level)
+        val uri = intent.data ?: return
+        if (uri.scheme != "kemimoto" || uri.host != "action") return
+
+        when (uri.getQueryParameter("command")?.lowercase(Locale.ROOT)) {
+            "heat" -> {
+                val zone = uri.getQueryParameter("zone")?.lowercase(Locale.ROOT) ?: return
+                val level = uri.getQueryParameter("level")?.toIntOrNull() ?: return
+                if (zone !in ALLOWED_ZONES || level !in 0..3) return
+                profileManager.stopProfile()
+                if (level == 0 && zone == "all" && _combinedState.value.isChoppedLowActive) {
+                    activeController.setChoppedLowMode(false)
                 }
-                "profile" -> {
-                    val profileId = uri.getQueryParameter("profileId") ?: ""
-                    val profile = PredefinedProfiles.findById(profileId)
-                    if (profile != null) {
-                        profileManager.startProfile(profile)
-                    }
+                activeController.setZoneLevel(zone, level)
+            }
+            "profile" -> {
+                val profileId = uri.getQueryParameter("profileId")?.trim() ?: return
+                val profile = PredefinedProfiles.findById(profileId) ?: return
+                profileManager.startProfile(profile)
+            }
+            "stealth" -> {
+                val enabledRaw = uri.getQueryParameter("enabled")?.lowercase(Locale.ROOT) ?: return
+                val enabled = when (enabledRaw) {
+                    "true" -> true
+                    "false" -> false
+                    else -> return
                 }
-                "stealth" -> {
-                    val enabled = uri.getQueryParameter("enabled")?.toBoolean() ?: true
-                    activeController.setStealthMode(enabled)
+                activeController.setStealthMode(enabled)
+            }
+            "stop" -> {
+                profileManager.stopProfile()
+                if (_combinedState.value.isChoppedLowActive) {
+                    activeController.setChoppedLowMode(false)
                 }
-                "stop" -> {
-                    profileManager.stopProfile()
-                    activeController.setLevels(0, 0, 0)
-                }
-                "mode" -> {
-                    val modeStr = uri.getQueryParameter("target") ?: "direct"
-                    val targetMode = if (modeStr.equals("gateway", ignoreCase = true)) {
-                        VestMode.ESP32_GATEWAY
-                    } else {
-                        VestMode.DIRECT
-                    }
-                    setOperatingMode(targetMode)
-                }
-                "reset" -> {
-                    activeController.resetBattery()
-                }
+                activeController.setLevels(0, 0, 0)
             }
         }
     }
@@ -311,7 +314,7 @@ class KemimotoBleService : Service() {
 
     private fun updateNotification(state: VestState) {
         val channelId = "openkemi_heat_channel"
-        val modeLabel = if (state.mode == VestMode.ESP32_GATEWAY) "[ESP32-C6]" else "[Direct]"
+        val modeLabel = if (state.mode == VestMode.ESP32_GATEWAY) "[ESP32]" else "[Direct]"
         val batteryText = state.batteryDisplay?.let { " • Batt: $it" } ?: ""
         val runtimeText = state.remainingRuntimeMinutes?.let { " • $it min" } ?: ""
 
@@ -320,21 +323,21 @@ class KemimotoBleService : Service() {
                 val stepLabel = state.currentStepLabelRes?.let { getString(it) } ?: ""
                 val min = state.stepRemainingSeconds / 60
                 val sec = state.stepRemainingSeconds % 60
-                "$modeLabel $stepLabel (${String.format("%02d:%02d", min, sec)})$batteryText$runtimeText"
+                "$modeLabel $stepLabel (${String.format(Locale.ROOT, "%02d:%02d", min, sec)})$batteryText$runtimeText"
             }
             state.isAnyZoneHeating -> {
                 val zones = mutableListOf<String>()
-                if (state.neckLevel > 0) zones.add("Col:${state.neckLevel}")
-                if (state.backLevel > 0) zones.add("Dos:${state.backLevel}")
-                if (state.bellyLevel > 0) zones.add("Ventre:${state.bellyLevel}")
-                "$modeLabel Chauffe: ${zones.joinToString(", ")}$batteryText$runtimeText"
+                if (state.neckLevel > 0) zones.add("${getString(R.string.zone_neck_short)}:${state.neckLevel}")
+                if (state.backLevel > 0) zones.add("${getString(R.string.zone_back_short)}:${state.backLevel}")
+                if (state.bellyLevel > 0) zones.add("${getString(R.string.zone_belly_short)}:${state.bellyLevel}")
+                "$modeLabel ${getString(R.string.notif_heating_prefix)} ${zones.joinToString(", ")}$batteryText$runtimeText"
             }
             else -> {
                 val connStr = when (state.connectionStatus) {
-                    com.supplices.kemimotowear.model.ConnectionStatus.CONNECTED -> getString(R.string.status_connected)
-                    com.supplices.kemimotowear.model.ConnectionStatus.CONNECTING -> getString(R.string.status_scanning)
-                    com.supplices.kemimotowear.model.ConnectionStatus.SCANNING -> getString(R.string.status_scanning)
-                    com.supplices.kemimotowear.model.ConnectionStatus.DISCONNECTED -> getString(R.string.status_disconnected)
+                    ConnectionStatus.CONNECTED -> getString(R.string.status_connected)
+                    ConnectionStatus.CONNECTING -> getString(R.string.status_scanning)
+                    ConnectionStatus.SCANNING -> getString(R.string.status_scanning)
+                    ConnectionStatus.DISCONNECTED -> getString(R.string.status_disconnected)
                 }
                 "$modeLabel $connStr$batteryText$runtimeText"
             }
@@ -367,6 +370,7 @@ class KemimotoBleService : Service() {
     }
 
     override fun onDestroy() {
+        profileManager.destroy()
         serviceScope.cancel()
         directController.disconnectAndClean()
         gatewayController.disconnectAndClean()

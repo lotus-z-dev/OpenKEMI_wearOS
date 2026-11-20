@@ -12,27 +12,49 @@ android {
         applicationId = "com.supplices.kemimotowear"
         minSdk = 30
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.1.0"
+    }
+
+    val keystorePath = System.getenv("OPENKEMI_KEYSTORE_PATH")
+    val keystorePassword = System.getenv("OPENKEMI_KEYSTORE_PASSWORD")
+    val releaseKeyAlias = System.getenv("OPENKEMI_KEY_ALIAS")
+    val releaseKeyPassword = System.getenv("OPENKEMI_KEY_PASSWORD")
+    val hasReleaseSigning = !keystorePath.isNullOrBlank() &&
+        !keystorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank()
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(keystorePath!!)
+                storePassword = keystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                enableV1Signing = false
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
-            isShrinkResources = false
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            // Fail-closed: never fall back to the public Android debug keystore for release builds.
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             isShrinkResources = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -75,6 +97,6 @@ dependencies {
     implementation(libs.wear.watchface.complications)
     implementation(libs.guava)
 
-    // Security & Encrypted SharedPreferences (for BLE IRK storage)
+    // Security & Encrypted SharedPreferences (for BLE MAC / IRK metadata storage)
     implementation(libs.androidx.security.crypto)
 }

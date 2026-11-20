@@ -50,6 +50,7 @@
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:label="@string/app_name"
             android:taskAffinity=""
             android:theme="@android:style/Theme.DeviceDefault">
@@ -59,12 +60,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Gemini / Google Assistant Deep Link Action Handler -->
+            <!-- Local On-Device Assistant / Shortcut Action Handler (non-browsable) -->
             <!-- Scheme: kemimoto://action?command=heat&zone=neck&level=2 -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:host="action"
                     android:scheme="kemimoto" />

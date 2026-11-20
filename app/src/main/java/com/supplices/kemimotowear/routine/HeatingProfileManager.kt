@@ -42,12 +42,14 @@ class HeatingProfileManager(
      * @param profile HeatingProfile instance containing steps and cyclic settings
      */
     fun startProfile(profile: HeatingProfile) {
+        if (profile.steps.isEmpty()) return
         stopProfile()
 
         _activeProfile.value = profile
         executionJob = coroutineScope.launch {
             do {
                 for (step in profile.steps) {
+                    if (!isActive) break
                     executeStep(step)
                 }
             } while (profile.isCyclic && isActive)
@@ -69,6 +71,14 @@ class HeatingProfileManager(
     }
 
     /**
+     * Releases the background coroutine scope when the owning service is destroyed.
+     */
+    fun destroy() {
+        stopProfile()
+        coroutineScope.cancel()
+    }
+
+    /**
      * Executes an individual phase step: triggers haptics, dispatches BLE commands,
      * and decrements countdown every second.
      */
@@ -82,8 +92,8 @@ class HeatingProfileManager(
         // Dispatch new heating values to the BLE manager
         onApplyHeatLevels(step.neckLevel, step.backLevel, step.bellyLevel)
 
-        var totalSeconds = step.durationMinutes * 60
-        while (totalSeconds > 0 && coroutineScope.isActive) {
+        var totalSeconds = step.durationMinutes.coerceAtLeast(1) * 60
+        while (totalSeconds > 0 && currentCoroutineContext().isActive) {
             _stepRemainingSeconds.value = totalSeconds
             delay(1000L)
             totalSeconds--

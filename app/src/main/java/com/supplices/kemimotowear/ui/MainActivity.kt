@@ -220,6 +220,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                     onTurnOffAll = {
                         val svc = bleServiceState.value
                         svc?.profileManager?.stopProfile()
+                        if (vestState.isChoppedLowActive) {
+                            svc?.activeController?.setChoppedLowMode(false)
+                        }
                         svc?.activeController?.setLevels(0, 0, 0)
                         triggerCodedHaptic(HapticAction.OFF)
                     },
@@ -701,7 +704,7 @@ fun SettingsPanel(
                     },
                     secondaryLabel = {
                         Text(
-                            text = "Scan strict de proximité",
+                            text = stringResource(R.string.pairing_strict_proximity),
                             fontSize = 9.sp,
                             color = Color(0xFF80D8FF)
                         )
@@ -738,19 +741,19 @@ fun SettingsPanel(
                 secondaryLabel = {
                     if (isConnected) {
                         Text(
-                            text = "Touchez pour déconnecter",
+                            text = stringResource(R.string.tap_to_disconnect),
                             fontSize = 8.5.sp,
                             color = Color(0xFFB0BEC5)
                         )
                     } else if (isPaired) {
                         Text(
-                            text = "Touchez pour reconnecter",
+                            text = stringResource(R.string.tap_to_reconnect),
                             fontSize = 8.5.sp,
                             color = Color(0xFF80D8FF)
                         )
                     } else {
                         Text(
-                            text = "Veste non associée",
+                            text = stringResource(R.string.vest_not_paired_short),
                             fontSize = 8.5.sp,
                             color = Color(0xFFFFB74D)
                         )
@@ -770,7 +773,7 @@ fun SettingsPanel(
             )
         }
 
-        // 4. Sub-Option Dédiée: Passerelle ESP32
+        // 4. Dedicated ESP32 Gateway Sub-Option
         item {
             val isGateway = state.mode == VestMode.ESP32_GATEWAY
             Chip(
@@ -787,9 +790,9 @@ fun SettingsPanel(
                     Text(
                         text = if (isGateway) {
                             if (state.connectionStatus == ConnectionStatus.CONNECTED) {
-                                "● " + stringResource(R.string.esp32_status_connected) + " • Configurer →"
+                                "● " + stringResource(R.string.esp32_status_connected) + " • " + stringResource(R.string.configure_arrow)
                             } else {
-                                "○ " + stringResource(R.string.esp32_status_disconnected) + " • Configurer →"
+                                "○ " + stringResource(R.string.esp32_status_disconnected) + " • " + stringResource(R.string.configure_arrow)
                             }
                         } else {
                             stringResource(R.string.esp32_toggle_desc_off) + " →"
@@ -964,7 +967,7 @@ fun SettingsPanel(
                                     }
                                     context.startActivity(intent)
                                 } catch (_: Exception) {
-                                    Toast.makeText(context, "Navigateur introuvable", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.browser_not_found), Toast.LENGTH_SHORT).show()
                                 }
                             }
                             .padding(horizontal = 8.dp, vertical = 5.dp)
@@ -1000,7 +1003,7 @@ fun SettingsPanel(
                                     }
                                     context.startActivity(intent)
                                 } catch (_: Exception) {
-                                    Toast.makeText(context, "Navigateur introuvable", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.browser_not_found), Toast.LENGTH_SHORT).show()
                                 }
                             }
                             .padding(horizontal = 8.dp, vertical = 5.dp)
@@ -1313,7 +1316,7 @@ fun SettingsPanel(
                                     }
                                     context.startActivity(intent)
                                 } catch (_: Exception) {
-                                    Toast.makeText(context, "Navigateur introuvable", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.browser_not_found), Toast.LENGTH_SHORT).show()
                                 }
                             }
                             .padding(horizontal = 8.dp, vertical = 5.dp)
@@ -1353,7 +1356,7 @@ fun SettingsPanel(
                                     }
                                     context.startActivity(intent)
                                 } catch (_: Exception) {
-                                    Toast.makeText(context, "Navigateur introuvable", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.browser_not_found), Toast.LENGTH_SHORT).show()
                                 }
                             }
                             .padding(horizontal = 8.dp, vertical = 5.dp)
@@ -1457,7 +1460,7 @@ fun HomePanel(
                     },
                     secondaryLabel = {
                         Text(
-                            text = "Touchez pour acquitter",
+                            text = stringResource(R.string.tap_to_acknowledge),
                             fontSize = 9.sp,
                             color = Color(0xFFFFCDD2),
                             textAlign = TextAlign.Center,
@@ -1680,7 +1683,7 @@ fun HomePanel(
                 ) {
                     Image(
                         painter = painterResource(id = R.mipmap.ic_launcher),
-                        contentDescription = "Veste connectée",
+                        contentDescription = stringResource(R.string.connected_vest_cd),
                         modifier = Modifier
                             .size(24.dp)
                             .clip(CircleShape)
@@ -1931,7 +1934,10 @@ fun CircularBatteryCard(state: VestState) {
 
             Column {
                 Text(
-                    text = if (state.mode == VestMode.ESP32_GATEWAY) "Batterie Virtuelle" else "Batterie Veste",
+                    text = stringResource(
+                        if (state.mode == VestMode.ESP32_GATEWAY) R.string.battery_virtual_title
+                        else R.string.battery_vest_title
+                    ),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -1946,7 +1952,7 @@ fun CircularBatteryCard(state: VestState) {
                 }
                 if (state.accumulatedMah != null && state.mode == VestMode.ESP32_GATEWAY) {
                     Text(
-                        text = "Conso: ${state.accumulatedMah} mAh",
+                        text = stringResource(R.string.battery_consumed_format, state.accumulatedMah),
                         fontSize = 9.sp,
                         color = Color.LightGray
                     )
@@ -2246,7 +2252,11 @@ fun ProfileStatusChip(
         },
         secondaryLabel = {
             Text(
-                text = if (isActive) "${stringResource(R.string.state_on)} • En cours" else stringResource(profile.subtitleRes),
+                text = if (isActive) {
+                    "${stringResource(R.string.state_on)} • ${stringResource(R.string.profile_running_suffix)}"
+                } else {
+                    stringResource(profile.subtitleRes)
+                },
                 fontSize = 9.sp,
                 color = if (isActive) Color(0xFF80D8FF) else Color.LightGray,
                 maxLines = 1
@@ -2302,7 +2312,7 @@ fun ResetBatteryChip(onReset: () -> Unit) {
         },
         secondaryLabel = {
             Text(
-                text = "Recalibre la jauge à 100%",
+                text = stringResource(R.string.reset_battery_desc),
                 fontSize = 9.sp,
                 color = Color.LightGray
             )
